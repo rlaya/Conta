@@ -1,0 +1,208 @@
+<!-- templates/admin/form_proveedor.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Header del formulario -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas {% if action == 'crear' %}fa-user-plus{% else %}fa-user-edit{% endif %} me-2"></i>
+                    {% if action == 'crear' %}Nuevo Proveedor{% else %}Editar Proveedor{% endif %}
+                </h2>
+                <a href="{{ url_for('admin_proveedores') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Volver a Proveedores
+                </a>
+            </div>
+
+            <!-- Formulario -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" id="formProveedor">
+                        {% if action == 'editar' %}
+                        <input type="hidden" name="id_proveedor" value="{{ registro[0] }}">
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Nombre -->
+                            <div class="col-md-12">
+                                <label for="nombre" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Nombre <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="nombre" 
+                                       name="nombre" 
+                                       value="{{ registro[1] if registro else '' }}" 
+                                       required 
+                                       placeholder="Ingrese el nombre completo del cliente">
+                                <div class="form-text">Nombre completo o razón social del proveedor.</div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-1"></i>Email
+                                </label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="{{ registro[2] if registro else '' }}" 
+                                       placeholder="cliente@ejemplo.com">
+                                <div class="form-text">Dirección de correo electrónico.</div>
+                            </div>
+
+                            <!-- RFC -->
+                            <div class="col-md-6">
+                                <label for="rfc" class="form-label">
+                                    <i class="fas fa-id-card me-1"></i>RFC
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="rfc" 
+                                       name="rfc" 
+                                       value="{{ registro[3] if registro else '' }}" 
+                                       placeholder="Ingrese el RFC">
+                                <div class="form-text">Registro Federal de Contribuyentes.</div>
+                            </div>
+
+                            <!-- Teléfono -->
+                            <div class="col-md-6">
+                                <label for="telefono" class="form-label">
+                                    <i class="fas fa-phone me-1"></i>Teléfono
+                                </label>
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="telefono" 
+                                       name="telefono" 
+                                       value="{{ registro[4] if registro else '' }}" 
+                                       placeholder="(000) 000-0000">
+                                <div class="form-text">Número de teléfono de contacto.</div>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="col-md-6">
+                                <label for="direccion" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Dirección
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="direccion" 
+                                       name="direccion" 
+                                       value="{{ registro[5] if registro else '' }}" 
+                                       placeholder="Dirección completa">
+                                <div class="form-text">Domicilio fiscal del cliente.</div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('admin_proveedores') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-1"></i>Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>
+                                        {% if action == 'crear' %}Crear Proveedor{% else %}Guardar Cambios{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            {% if action == 'editar' %}
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Información:</strong> Editando Proveedor ID: {{ registro[0] }}. 
+                Los cambios se aplicarán inmediatamente después de guardar.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Script para validación y mejoras UX -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formProveedor');
+    
+    // Validación personalizada
+    form.addEventListener('submit', function(e) {
+        const nombre = document.getElementById('nombre').value.trim();
+        
+        if (!nombre) {
+            e.preventDefault();
+            alert('Por favor, ingrese el nombre del cliente.');
+            document.getElementById('nombre').focus();
+            return false;
+        }
+
+        // Mostrar loading al enviar
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+        submitBtn.disabled = true;
+    });
+
+    // Mejorar UX para campos requeridos
+    const requiredFields = form.querySelectorAll('[required]');
+    requiredFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.btn {
+    border-radius: 6px;
+}
+
+.is-valid {
+    border-color: #198754;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0 15px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

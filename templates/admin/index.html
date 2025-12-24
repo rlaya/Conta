@@ -1,0 +1,110 @@
+<!-- templates/admin/index.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4"><i class="fas fa-cogs me-2"></i>Panel de Administración</h2>
+            
+            <div class="row">
+                <!-- Clientes -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Clientes</h5>
+                            <p class="card-text">Gestión de clientes del sistema</p>
+                            <a href="{{ url_for('admin_clientes') }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-right me-1"></i>Acceder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Proveedores -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-truck fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Proveedores</h5>
+                            <p class="card-text">Gestión de proveedores</p>
+                            <a href="{{ url_for('admin_proveedores') }}" class="btn btn-success">
+                                <i class="fas fa-arrow-right me-1"></i>Acceder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Plan de Cuentas -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Plan de Cuentas</h5>
+                            <p class="card-text">Configuración contable</p>
+                            <a href="{{ url_for('admin_plan_cuentas') }}" class="btn btn-info">
+                                <i class="fas fa-arrow-right me-1"></i>Acceder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cuentas Bancarias -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-university fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Cuentas Bancarias</h5>
+                            <p class="card-text">Gestión de cuentas bancarias</p>
+                            <a href="{{ url_for('admin_cuentas_bancarias') }}" class="btn btn-warning">
+                                <i class="fas fa-arrow-right me-1"></i>Acceder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Usuarios -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-cog fa-3x text-secondary mb-3"></i>
+                            <h5 class="card-title">Usuarios</h5>
+                            <p class="card-text">Gestión de usuarios del sistema</p>
+                            <a href="{{ url_for('admin_usuarios') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-right me-1"></i>Acceder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tasas de IVA -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-percentage fa-3x text-danger mb-3"></i>
+                            <h5 class="card-title">Tasas de IVA</h5>
+                            <p class="card-text">Configuración de impuestos</p>
+                            <a href="{{ url_for('admin_tasas_iva') }}" class="btn btn-danger">
+                                <i class="fas fa-arrow-right me-1"></i>Acceder
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+</style>
+{% endblock %}

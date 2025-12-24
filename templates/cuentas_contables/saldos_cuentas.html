@@ -1,0 +1,442 @@
+<!-- templates/cuentas_contables/saldos_cuentas.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saldos de Cuentas Contables</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3e63cf 0%, #1a3aae 100%);
+        }
+        .table th {
+            background-color: #f1f3fa;
+            border-top: none;
+        }
+        .filtros {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4e73df;
+        }
+        .saldo-positivo {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .saldo-negativo {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .saldo-cero {
+            color: #6c757d;
+        }
+        .badge-periodo {
+            background-color: #6f42c1;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .movimiento {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .movimiento-positivo {
+            color: #28a745;
+        }
+        .movimiento-negativo {
+            color: #dc3545;
+        }
+        .totales-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .action-buttons .btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        @media (max-width: 768px) {
+            .action-buttons .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+            .table-responsive {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0 text-primary">
+                <i class="fas fa-balance-scale me-2"></i>Saldos de Cuentas Contables
+            </h1>
+            <a href="{{ url_for('menu') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver al Menú
+            </a>
+        </div>
+
+        <!-- Tarjeta principal -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Lista de Saldos por Período</h5>
+                <div>
+                    <a href="{{ url_for('cuentas_contables') }}" class="btn btn-info btn-sm me-2">
+                        <i class="fas fa-book me-1"></i>Plan de Cuentas
+                    </a>
+                    <a href="{{ url_for('nuevo_saldo_cuenta') }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus me-1"></i>Nuevo Saldo
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Filtros -->
+                <div class="filtros">
+                    <h6 class="mb-3"><i class="fas fa-filter me-2"></i>Filtros</h6>
+                    <form method="GET" action="{{ url_for('saldos_cuentas') }}" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Cuenta</label>
+                            <select name="id_cuenta" class="form-select select2">
+                                <option value="">Todas</option>
+                                {% for cuenta in todas_cuentas %}
+                                <option value="{{ cuenta.codigo }}" 
+                                        {% if request.args.get('id_cuenta') == cuenta.codigo %}selected{% endif %}>
+                                    {{ cuenta.codigo }} - {{ cuenta.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Período</label>
+                            <select name="periodo" class="form-select">
+                                <option value="">Todos</option>
+                                {% for periodo in periodos_disponibles %}
+                                <option value="{{ periodo }}" 
+                                        {% if request.args.get('periodo') == periodo|string %}selected{% endif %}>
+                                    {{ periodo }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo Cuenta</label>
+                            <select name="tipo" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="Activo" {% if request.args.get('tipo') == 'Activo' %}selected{% endif %}>Activo</option>
+                                <option value="Pasivo" {% if request.args.get('tipo') == 'Pasivo' %}selected{% endif %}>Pasivo</option>
+                                <option value="Patrimonio" {% if request.args.get('tipo') == 'Patrimonio' %}selected{% endif %}>Patrimonio</option>
+                                <option value="Ingreso" {% if request.args.get('tipo') == 'Ingreso' %}selected{% endif %}>Ingreso</option>
+                                <option value="Gasto" {% if request.args.get('tipo') == 'Gasto' %}selected{% endif %}>Gasto</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Ordenar por</label>
+                            <select name="ordenar" class="form-select">
+                                <option value="periodo_desc" {% if request.args.get('ordenar') == 'periodo_desc' %}selected{% endif %}>Período ↓</option>
+                                <option value="periodo_asc" {% if request.args.get('ordenar') == 'periodo_asc' %}selected{% endif %}>Período ↑</option>
+                                <option value="saldo_desc" {% if request.args.get('ordenar') == 'saldo_desc' %}selected{% endif %}>Saldo ↓</option>
+                                <option value="saldo_asc" {% if request.args.get('ordenar') == 'saldo_asc' %}selected{% endif %}>Saldo ↑</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Mostrar</label>
+                            <select name="mostrar" class="form-select">
+                                <option value="todos" {% if request.args.get('mostrar') == 'todos' %}selected{% endif %}>Todos</option>
+                                <option value="con_saldo" {% if request.args.get('mostrar') == 'con_saldo' %}selected{% endif %}>Con Saldo ≠ 0</option>
+                                <option value="con_movimiento" {% if request.args.get('mostrar') == 'con_movimiento' %}selected{% endif %}>Con Movimiento</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                            <a href="{{ url_for('saldos_cuentas') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Botones de exportación -->
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="{{ url_for('saldos_cuentas_excel', **request.args) }}" class="btn btn-success me-2">
+                        <i class="fas fa-file-excel me-1"></i>Exportar a Excel
+                    </a>
+                    <a href="{{ url_for('saldos_cuentas_pdf', **request.args) }}" class="btn btn-danger">
+                        <i class="fas fa-file-pdf me-1"></i>Exportar a PDF
+                    </a>
+                </div>
+
+                <!-- Estadísticas y totales -->
+                <div class="totales-box">
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <h5 class="text-primary">{{ total_saldos }}</h5>
+                                <p class="small text-muted mb-0">Total Saldos</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <h5 class="text-success">${{ "{:,.2f}".format(total_saldo_final) }}</h5>
+                                <p class="small text-muted mb-0">Saldo Final Total</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <h5 class="text-info">{{ periodos_unicos|length }}</h5>
+                                <p class="small text-muted mb-0">Períodos</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="text-center">
+                                <h5 class="text-warning">{{ cuentas_con_saldo }}</h5>
+                                <p class="small text-muted mb-0">Cuentas con Saldo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de saldos -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Cuenta</th>
+                                <th>Período</th>
+                                <th class="text-end">Saldo Inicial</th>
+                                <th class="text-end">Saldo Final</th>
+                                <th class="text-center">Movimiento</th>
+                                <th>Actualizado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for saldo in saldos.items %}
+                            {% set movimiento = saldo.saldo_final - saldo.saldo_inicial %}
+                            <tr>
+                                <td>
+                                    <strong>{{ saldo.cuenta.codigo }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ saldo.cuenta.nombre }}</small>
+                                    <br>
+                                    <small>
+                                        <span class="badge" style="background-color: #e3f2fd; color: #1976d2;">
+                                            {{ saldo.cuenta.tipo }}
+                                        </span>
+                                        <span class="badge ms-1" style="background-color: #f3e5f5; color: #7b1fa2;">
+                                            {{ saldo.cuenta.naturaleza }}
+                                        </span>
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge-periodo">{{ saldo.periodo }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="{% if saldo.saldo_inicial > 0 %}saldo-positivo{% elif saldo.saldo_inicial < 0 %}saldo-negativo{% else %}saldo-cero{% endif %}">
+                                        ${{ "{:,.2f}".format(saldo.saldo_inicial) }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="{% if saldo.saldo_final > 0 %}saldo-positivo{% elif saldo.saldo_final < 0 %}saldo-negativo{% else %}saldo-cero{% endif %}">
+                                        ${{ "{:,.2f}".format(saldo.saldo_final) }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if movimiento != 0 %}
+                                    <span class="movimiento {% if movimiento > 0 %}movimiento-positivo{% else %}movimiento-negativo{% endif %}">
+                                        {% if movimiento > 0 %}
+                                        <i class="fas fa-arrow-up me-1"></i>${{ "{:,.2f}".format(movimiento) }}
+                                        {% else %}
+                                        <i class="fas fa-arrow-down me-1"></i>${{ "{:,.2f}".format(-movimiento) }}
+                                        {% endif %}
+                                    </span>
+                                    {% else %}
+                                    <span class="movimiento">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ saldo.creado_en.strftime('%d/%m/%Y') }}
+                                </td>
+                                <td class="action-buttons">
+                                    <a href="{{ url_for('editar_saldo_cuenta', id_cuenta=saldo.id_cuenta, periodo=saldo.periodo) }}" 
+                                       class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ saldo.id_cuenta }}{{ saldo.periodo }}"
+                                            title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <a href="{{ url_for('procesar_movimientos', id_cuenta=saldo.id_cuenta, periodo=saldo.periodo) }}" 
+                                       class="btn btn-sm btn-info" title="Procesar Movimientos">
+                                        <i class="fas fa-sync"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            
+                            <!-- Modal de confirmación para eliminar -->
+                            <div class="modal fade" id="deleteModal{{ saldo.id_cuenta }}{{ saldo.periodo }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirmar Eliminación</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            ¿Está seguro de eliminar el saldo de la cuenta {{ saldo.cuenta.codigo }} para el período {{ saldo.periodo }}?
+                                            <br><strong>Esta acción no se puede deshacer.</strong>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <a href="{{ url_for('eliminar_saldo_cuenta', id_cuenta=saldo.id_cuenta, periodo=saldo.periodo) }}" 
+                                               class="btn btn-danger">Eliminar</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if saldos.pages > 1 %}
+                <nav aria-label="Paginación">
+                    <ul class="pagination justify-content-center">
+                        {% if saldos.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('saldos_cuentas', page=saldos.prev_num, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in saldos.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == saldos.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('saldos_cuentas', page=page_num, **request.args) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if saldos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('saldos_cuentas', page=saldos.next_num, **request.args) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Inicializar Select2
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                language: 'es',
+                width: '100%',
+                placeholder: 'Seleccione una cuenta',
+                allowClear: true
+            });
+            
+            // Inicializar DataTables
+            $('table').DataTable({
+                "paging": false,
+                "searching": false,
+                "info": false,
+                "ordering": true,
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json"
+                },
+                "columnDefs": [
+                    { "orderable": false, "targets": [6] } // Columna de acciones no ordenable
+                ]
+            });
+            
+            // Confirmación antes de eliminar
+            $('.btn-danger[href*="eliminar"]').on('click', function(e) {
+                if (!confirm('¿Está seguro de eliminar este registro? Esta acción no se puede deshacer.')) {
+                    e.preventDefault();
+                }
+            });
+            
+            // Confirmación antes de procesar movimientos
+            $('.btn-info[href*="procesar"]').on('click', function(e) {
+                if (!confirm('¿Está seguro de procesar los movimientos para esta cuenta y período?\n\nEsto actualizará el saldo final basado en todos los asientos contables registrados.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

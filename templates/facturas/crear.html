@@ -1,0 +1,229 @@
+
+<!-- templates/facturas/crear.html -->
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h2 class="mb-4">➕ Crear Nueva Factura</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Datos de la Factura</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="formFactura" method="POST">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="tipo" class="form-label">Tipo (*)</label>
+                                    <select name="tipo" id="tipo" class="form-select" required>
+                                        <option value="" selected disabled>-- Seleccione --</option>
+                                        <option value="venta">Venta</option>
+                                        <option value="compra">Compra</option>
+                                    </select>
+                                    <div class="invalid-feedback d-block" id="error-tipo"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="folio" class="form-label">Folio (*)</label>
+                                    <input type="text" name="folio" id="folio" class="form-control" required placeholder="Ej: 001-2025">
+                                    <div class="invalid-feedback d-block" id="error-folio"></div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="fecha" class="form-label">Fecha (*)</label>
+                                    <input type="date" name="fecha" id="fecha" class="form-control" required>
+                                    <div class="invalid-feedback d-block" id="error-fecha"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="fecha_vencimiento" class="form-label">Vencimiento (opcional)</label>
+                                    <input type="date" name="fecha_vencimiento" id="fecha_vencimiento" class="form-control">
+                                    <div class="invalid-feedback d-block" id="error-fecha_vencimiento"></div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="total" class="form-label">Total (*)</label>
+                                    <input type="number" step="0.01" name="total" id="total" class="form-control text-end" required min="0.01" placeholder="0.00">
+                                    <div class="invalid-feedback d-block" id="error-total"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="id_tercero" class="form-label">Tercero (*)</label>
+                                    <select name="id_tercero" id="id_tercero" class="form-select" required>
+                                        <option value="" selected disabled>-- Seleccione --</option>
+                                        {% for t in terceros %}
+                                          <option value="{{ t.id }}" data-tipo="{{ t.tipo }}" data-nombre="{{ t.nombre }}">{{ t.nombre }} ({{ 'Cliente' if t.tipo == 'cliente' else 'Proveedor' }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="invalid-feedback d-block" id="error-id_tercero"></div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a href="{{ url_for('facturas_view') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" form="formFactura" id="btnSubmit" class="btn btn-success" disabled>
+                            ✅ Crear Factura
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card shadow">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="mb-0 text-dark">📄 Vista Previa (Simulación)</h5>
+                        <button onclick="imprimirVistaPrevia()" class="btn btn-info btn-sm">🖨️ Imprimir/PDF</button>
+                    </div>
+                    <div class="card-body bg-white p-4" id="vista-previa" style="min-height: 350px;">
+                        <p class="text-center text-muted mt-5">Rellene los campos para ver la vista previa.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<style>
+    /* Estilos de impresión mejorados */
+    @media print {
+        .no-print { display: none !important; }
+        .container { max-width: 100%; padding: 0 !important; margin: 0 !important; }
+        .row, .col-lg-6 { width: 100%; margin: 0 !important; padding: 0 !important; }
+        body * { visibility: hidden; }
+        #vista-previa, #vista-previa * { visibility: visible; }
+        #vista-previa {
+            position: absolute; left: 0; top: 0;
+            width: 100%; box-sizing: border-box; padding: 20px;
+            font-size: 14pt; border: none !important; box-shadow: none !important;
+        }
+    }
+    .invalid-feedback.d-block { font-size: 0.8em; }
+</style>
+
+<script>
+    const formFields = ['tipo', 'folio', 'fecha', 'fecha_vencimiento', 'total', 'id_tercero'];
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        try {
+            const d = new Date(dateStr + 'T00:00:00'); // Asegura zona horaria correcta
+            return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        } catch (e) { return 'Fecha inválida'; }
+    }
+
+    function formatCurrency(amount) {
+        const val = parseFloat(amount) || 0;
+        return new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(val);
+    }
+
+    function updateVistaPrevia() {
+        const data = {};
+        formFields.forEach(id => data[id] = document.getElementById(id)?.value || '');
+
+        const terceroEl = document.getElementById('id_tercero');
+        const selectedOption = terceroEl.options[terceroEl.selectedIndex];
+        const terceroNombre = selectedOption?.dataset.nombre || '—';
+
+        let html = '<p class="text-center text-muted mt-5">Rellene los campos para ver la vista previa.</p>';
+
+        if (data.folio || data.tipo || data.fecha || data.total) {
+            const tipoLabel = data.tipo === 'venta' ? 'FACTURA DE VENTA' : (data.tipo === 'compra' ? 'FACTURA DE COMPRA' : 'DOCUMENTO');
+            const tipoColor = data.tipo === 'venta' ? '#198754' : '#dc3545'; // Colores Bootstrap
+
+            html = `
+                <div class="text-center mb-4">
+                    <h2 style="color: ${tipoColor}; margin: 0;">${tipoLabel}</h2>
+                    <p class="text-muted mb-0">Folio: <strong class="text-dark">${data.folio || '—'}</strong></p>
+                </div>
+                <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                    <div style="width: 60%;">
+                        <p class="mb-1"><strong>Tercero:</strong> ${terceroNombre}</p>
+                        <p class="mb-1"><strong>Tipo:</strong> ${data.tipo.charAt(0).toUpperCase() + data.tipo.slice(1)}</p>
+                    </div>
+                    <div class="text-end" style="width: 40%;">
+                        <p class="mb-1"><strong>Fecha:</strong> ${formatDate(data.fecha)}</p>
+                        <p class="mb-1"><strong>Vencimiento:</strong> ${formatDate(data.fecha_vencimiento)}</p>
+                    </div>
+                </div>
+                <div class="text-end mt-4 pt-3 border-top border-2">
+                    <p class="mb-0 text-muted">TOTAL NETO:</p>
+                    <p style="font-size: 1.6em; color: ${tipoColor}; font-weight: bold;">${formatCurrency(data.total)}</p>
+                </div>
+                <div class="text-center mt-5">
+                    <small class="text-muted">Vista previa de creación - Sistema Contable</small>
+                </div>
+            `;
+        }
+
+        document.getElementById('vista-previa').innerHTML = html;
+    }
+
+    function imprimirVistaPrevia() {
+        if (!document.getElementById('folio').value.trim()) {
+            alert('Complete al menos el Folio para imprimir.');
+            return;
+        }
+        window.print();
+    }
+
+    // Validación y Listeners
+    const validators = {
+        tipo: v => v ? '' : 'El tipo es requerido.',
+        folio: v => v.trim() ? '' : 'El folio es requerido.',
+        fecha: v => v ? '' : 'La fecha es requerida.',
+        total: v => v && !isNaN(v) && parseFloat(v) > 0 ? '' : 'El total debe ser mayor a 0.',
+        id_tercero: v => v ? '' : 'El tercero es requerido.',
+        fecha_vencimiento: v => {
+            const f = document.getElementById('fecha').value;
+            const today = new Date().toISOString().split('T')[0];
+            const dateToCheck = v || today; 
+            return !f || new Date(dateToCheck) >= new Date(f) ? '' : 'Debe ser posterior o igual a la fecha de emisión.';
+        }
+    };
+
+    function runValidation(id) {
+        const el = document.getElementById(id);
+        const errorMsg = validators[id](el.value);
+        const errorEl = document.getElementById('error-' + id);
+        
+        errorEl.textContent = errorMsg;
+        el.classList.toggle('is-invalid', !!errorMsg);
+        
+        return !errorMsg;
+    }
+
+    function checkFormValidity() {
+        let isFormValid = true;
+        // Solo verificamos los campos OBLIGATORIOS para habilitar el botón
+        ['tipo', 'folio', 'fecha', 'total', 'id_tercero'].forEach(id => {
+            if (!runValidation(id)) {
+                isFormValid = false;
+            }
+        });
+        document.getElementById('btnSubmit').disabled = !isFormValid;
+    }
+
+    // Setup Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('input', () => {
+                    checkFormValidity();
+                    updateVistaPrevia();
+                });
+            }
+        });
+        checkFormValidity();
+        updateVistaPrevia();
+    });
+</script>
+{% endblock %}

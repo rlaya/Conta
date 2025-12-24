@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{% if action == 'crear' %}Nueva Cuenta Bancaria{% else %}Editar Cuenta Bancaria{% endif %}</h2>
+<form method="POST">
+  {% if action == 'editar' %}
+    <input type="hidden" name="id_cuenta_bancaria" value="{{ registro[0] }}">
+  {% endif %}
+  <table>
+    <tr><td>Banco:</td><td><input type="text" name="nombre_banco" value="{{ registro[1] if registro }}" required></td></tr>
+    <tr><td>Nro Cuenta:</td><td><input type="text" name="numero_cuenta" value="{{ registro[2] if registro }}"></td></tr>
+    <tr><td>CBU:</td><td><input type="text" name="id_cuenta_contable" value="{{ registro[3] if registro }}"></td></tr>
+    <tr><td>Alias:</td><td><input type="text" name="moneda" value="{{ registro[4] if registro }}"></td></tr>
+  </table>
+  <br>
+  <button type="submit">Guardar</button>
+  <a href="{{ url_for('admin_cuentas_bancarias') }}">Cancelar</a>
+</form>
+{% endblock %}

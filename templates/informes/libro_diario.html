@@ -1,0 +1,569 @@
+<!-- templates/informes/libro_diario.html -->
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con título y botones -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="fas fa-book me-2"></i>Libro Diario</h2>
+        <div>
+            <a href="{{ url_for('informes.menu_informes') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Volver a Informes
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('informes.exportar_informe', informe='libro-diario', formato='excel', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, pagina=pagina_actual) }}">
+                            <i class="fas fa-file-excel text-success me-2"></i>Excel (Página Actual)
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('informes.exportar_informe', informe='libro-diario', formato='excel', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin) }}">
+                            <i class="fas fa-file-excel text-success me-2"></i>Excel (Todo)
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('informes.exportar_informe', informe='libro-diario', formato='pdf', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin) }}">
+                            <i class="fas fa-file-pdf text-danger me-2"></i>PDF
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-filter me-2"></i>Filtros del Libro Diario</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" 
+                           id="fecha_inicio" 
+                           name="fecha_inicio" 
+                           class="form-control" 
+                           value="{{ fecha_inicio }}"
+                           max="{{ fecha_fin }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                    <input type="date" 
+                           id="fecha_fin" 
+                           name="fecha_fin" 
+                           class="form-control" 
+                           value="{{ fecha_fin }}"
+                           min="{{ fecha_inicio }}"
+                           max="{{ today }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="por_pagina" class="form-label">Registros/Página</label>
+                    <select id="por_pagina" name="por_pagina" class="form-select">
+                        <option value="10" {% if por_pagina == 10 %}selected{% endif %}>10</option>
+                        <option value="20" {% if por_pagina == 20 %}selected{% endif %}>20</option>
+                        <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if por_pagina == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                    <a href="{{ url_for('informes.libro_diario') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo me-1"></i>Restablecer
+                    </a>
+                </div>
+            </form>
+            
+            <!-- Resumen rápido -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-primary me-2">
+                                <i class="fas fa-calendar me-1"></i>{{ fecha_inicio }} a {{ fecha_fin }}
+                            </span>
+                            <span class="badge bg-info">
+                                <i class="fas fa-list-ol me-1"></i>{{ total }} asientos
+                            </span>
+                        </div>
+                        <div>
+                            <span class="badge bg-success me-2">
+                                <i class="fas fa-arrow-up me-1"></i>Debe: {{ "₵{:,.2f}".format(total_debe) }}
+                            </span>
+                            <span class="badge bg-danger">
+                                <i class="fas fa-arrow-down me-1"></i>Haber: {{ "₵{:,.2f}".format(total_haber) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas del período -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Total Asientos</h6>
+                    <h2 class="text-primary">{{ total }}</h2>
+                    <small>Registros contables</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Total Débitos</h6>
+                    <h2 class="text-success">{{ "₵{:,.2f}".format(total_debe) }}</h2>
+                    <small>Suma de cargos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Total Créditos</h6>
+                    <h2 class="text-danger">{{ "₵{:,.2f}".format(total_haber) }}</h2>
+                    <small>Suma de abonos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card {% if total_debe == total_haber %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Balance</h6>
+                    <h2>
+                        {% set diferencia = total_debe - total_haber %}
+                        {% if diferencia == 0 %}
+                            <i class="fas fa-check-circle"></i> CUADRADO
+                        {% else %}
+                            <i class="fas fa-exclamation-circle"></i> {{ "₵{:,.2f}".format(diferencia|abs) }}
+                        {% endif %}
+                    </h2>
+                    <small>
+                        {% if diferencia == 0 %}
+                            Perfectamente balanceado
+                        {% elif diferencia > 0 %}
+                            Débitos mayores por {{ "₵{:,.2f}".format(diferencia) }}
+                        {% else %}
+                            Créditos mayores por {{ "₵{:,.2f}".format(diferencia|abs) }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla del Libro Diario -->
+    <div class="card mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Registros del Libro Diario</h5>
+            <div>
+                <span class="badge bg-light text-dark">
+                    Página {{ pagina_actual }} de {{ total_paginas }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="10%" class="text-center">Fecha</th>
+                            <th width="10%" class="text-center">Comprobante</th>
+                            <th width="10%">Código</th>
+                            <th width="25%">Cuenta</th>
+                            <th width="20%">Concepto</th>
+                            <th width="10%" class="text-end">Debe</th>
+                            <th width="10%" class="text-end">Haber</th>
+                            <th width="5%" class="text-center">Ref.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asiento in asientos %}
+                        <tr>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">
+                                    {{ asiento[0].strftime('%d/%m/%Y') }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a href="#" class="text-decoration-none" 
+                                   data-bs-toggle="tooltip" 
+                                   title="Ver comprobante completo">
+                                    {{ asiento[1] }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-white">
+                                    {{ asiento[3] }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ asiento[4] }}</small>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;" 
+                                     data-bs-toggle="tooltip" 
+                                     title="{{ asiento[2] }}">
+                                    {{ asiento[2] }}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                {% if asiento[5] > 0 %}
+                                <span class="fw-bold text-success">
+                                    {{ "₵{:,.2f}".format(asiento[5]) }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if asiento[6] > 0 %}
+                                <span class="fw-bold text-danger">
+                                    {{ "₵{:,.2f}".format(asiento[6]) }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if asiento[7] %}
+                                <span class="badge bg-secondary">{{ asiento[7] }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-book fa-3x mb-3"></i><br>
+                                    <h5>No hay asientos contables</h5>
+                                    <p>No se encontraron registros para el período seleccionado</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Totales de la página -->
+                        {% if asientos %}
+                        <tr class="table-active">
+                            <td colspan="5" class="text-end fw-bold">TOTALES DE LA PÁGINA:</td>
+                            <td class="text-end fw-bold text-success">
+                                {{ "₵{:,.2f}".format(asientos|sum(attribute=5)) }}
+                            </td>
+                            <td class="text-end fw-bold text-danger">
+                                {{ "₵{:,.2f}".format(asientos|sum(attribute=6)) }}
+                            </td>
+                            <td></td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                    <!-- Totales del período -->
+                    <tfoot class="table-dark">
+                        <tr>
+                            <td colspan="5" class="text-end fw-bold">TOTALES DEL PERÍODO:</td>
+                            <td class="text-end fw-bold text-success">
+                                {{ "₵{:,.2f}".format(total_debe) }}
+                            </td>
+                            <td class="text-end fw-bold text-danger">
+                                {{ "₵{:,.2f}".format(total_haber) }}
+                            </td>
+                            <td class="text-center">
+                                {% if total_debe == total_haber %}
+                                <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if total_paginas > 1 %}
+    <nav aria-label="Paginación del libro diario">
+        <ul class="pagination justify-content-center">
+            <!-- Primera página -->
+            <li class="page-item {% if pagina_actual == 1 %}disabled{% endif %}">
+                <a class="page-link" 
+                   href="{{ url_for('informes.libro_diario', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, por_pagina=por_pagina, pagina=1) }}">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+            </li>
+            
+            <!-- Anterior -->
+            <li class="page-item {% if pagina_actual == 1 %}disabled{% endif %}">
+                <a class="page-link" 
+                   href="{{ url_for('informes.libro_diario', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, por_pagina=por_pagina, pagina=pagina_actual-1) if pagina_actual > 1 else '#' }}">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </a>
+            </li>
+            
+            <!-- Páginas -->
+            {% for pagina in range(1, total_paginas + 1) %}
+                {% if pagina >= pagina_actual - 2 and pagina <= pagina_actual + 2 %}
+                <li class="page-item {% if pagina == pagina_actual %}active{% endif %}">
+                    <a class="page-link" 
+                       href="{{ url_for('informes.libro_diario', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, por_pagina=por_pagina, pagina=pagina) }}">
+                        {{ pagina }}
+                    </a>
+                </li>
+                {% elif pagina == pagina_actual - 3 or pagina == pagina_actual + 3 %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            <!-- Siguiente -->
+            <li class="page-item {% if pagina_actual == total_paginas %}disabled{% endif %}">
+                <a class="page-link" 
+                   href="{{ url_for('informes.libro_diario', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, por_pagina=por_pagina, pagina=pagina_actual+1) if pagina_actual < total_paginas else '#' }}">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            
+            <!-- Última página -->
+            <li class="page-item {% if pagina_actual == total_paginas %}disabled{% endif %}">
+                <a class="page-link" 
+                   href="{{ url_for('informes.libro_diario', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, por_pagina=por_pagina, pagina=total_paginas) }}">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    
+    <!-- Información de paginación -->
+    <div class="text-center text-muted mb-4">
+        <small>
+            Mostrando asientos {{ ((pagina_actual - 1) * por_pagina) + 1 }} 
+            a {{ min(pagina_actual * por_pagina, total) }} 
+            de {{ total }} totales
+            | {{ por_pagina }} registros por página
+        </small>
+    </div>
+    {% endif %}
+
+    <!-- Resumen por día -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Resumen por Día</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th class="text-end">Asientos</th>
+                                    <th class="text-end">Total Débito</th>
+                                    <th class="text-end">Total Crédito</th>
+                                    <th class="text-end">Diferencia</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Aquí iría un resumen por día calculado -->
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">
+                                        <i class="fas fa-chart-bar me-2"></i>
+                                        El resumen por día se generaría con datos reales
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6>Información del Libro Diario</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-info-circle text-primary me-2"></i>
+                                    <strong>Propósito:</strong> Registro cronológico
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Balance:</strong> 
+                                    {% if total_debe == total_haber %}
+                                    <span class="text-success">Cuadrado ✓</span>
+                                    {% else %}
+                                    <span class="text-danger">Descuadrado ✗</span>
+                                    {% endif %}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-calendar text-info me-2"></i>
+                                    <strong>Período:</strong> {{ dias_periodo }} días
+                                </li>
+                                <li>
+                                    <i class="fas fa-calculator text-warning me-2"></i>
+                                    <strong>Promedio/día:</strong> 
+                                    {{ "₵{:,.2f}".format((total_debe + total_haber) / 2 / dias_periodo) if dias_periodo > 0 else '₵0.00' }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Acerca del Libro Diario</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Características:</h6>
+                    <ul>
+                        <li><strong>Orden cronológico:</strong> Registros ordenados por fecha</li>
+                        <li><strong>Partida doble:</strong> Cada transacción afecta al menos dos cuentas</li>
+                        <li><strong>Balance:</strong> Suma de débitos = Suma de créditos</li>
+                        <li><strong>Referencia:</strong> Cada asiento tiene un comprobante de origen</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Uso recomendado:</h6>
+                    <ul>
+                        <li>Revisar transacciones día por día</li>
+                        <li>Auditar movimientos específicos</li>
+                        <li>Seguimiento de comprobantes</li>
+                        <li>Verificar el balance diario</li>
+                    </ul>
+                </div>
+            </div>
+            {% if error %}
+            <div class="alert alert-danger mt-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error al generar el informe:</strong> {{ error }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.pagination {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.badge {
+    font-size: 0.85em;
+}
+
+.text-truncate {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+    }
+    
+    .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .text-truncate {
+        max-width: 100px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Configurar fechas
+    const today = new Date().toISOString().split('T')[0];
+    
+    document.getElementById('fecha_inicio').addEventListener('change', function() {
+        document.getElementById('fecha_fin').min = this.value;
+        if (document.getElementById('fecha_fin').value) {
+            document.querySelector('form').submit();
+        }
+    });
+    
+    document.getElementById('fecha_fin').addEventListener('change', function() {
+        document.getElementById('fecha_inicio').max = this.value;
+        if (document.getElementById('fecha_inicio').value) {
+            document.querySelector('form').submit();
+        }
+    });
+    
+    // Auto-submit al cambiar registros por página
+    document.getElementById('por_pagina').addEventListener('change', function() {
+        document.querySelector('form').submit();
+    });
+    
+    // Resaltar filas al pasar el mouse
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(0, 123, 255, 0.05)';
+        });
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+});
+</script>
+{% endblock %}

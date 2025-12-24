@@ -1,0 +1,235 @@
+<!-- templates/facturas/editar.html -->
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container mt-4">
+        <h2 class="mb-4">✏️ Editar Factura #{{ factura.id_factura }}</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Modificar Datos de la Factura</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="formFactura" method="POST">
+                            <input type="hidden" name="id_factura" value="{{ factura.id_factura }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="tipo" class="form-label">Tipo (*)</label>
+                                    <select name="tipo" id="tipo" class="form-select" required>
+                                        <option value="venta" {% if factura.tipo == 'venta' %}selected{% endif %}>Venta</option>
+                                        <option value="compra" {% if factura.tipo == 'compra' %}selected{% endif %}>Compra</option>
+                                    </select>
+                                    <div class="invalid-feedback d-block" id="error-tipo"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="folio" class="form-label">Folio (*)</label>
+                                    <input type="text" name="folio" id="folio" class="form-control" value="{{ factura.folio }}" required placeholder="Ej: 001-2025">
+                                    <div class="invalid-feedback d-block" id="error-folio"></div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="fecha" class="form-label">Fecha (*)</label>
+                                    <input type="date" name="fecha" id="fecha" class="form-control" value="{{ factura.fecha }}" required>
+                                    <div class="invalid-feedback d-block" id="error-fecha"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="fecha_vencimiento" class="form-label">Vencimiento</label>
+                                    <input type="date" name="fecha_vencimiento" id="fecha_vencimiento" class="form-control" value="{{ factura.fecha_vencimiento or '' }}">
+                                    <div class="invalid-feedback d-block" id="error-fecha_vencimiento"></div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="total" class="form-label">Total (*)</label>
+                                    <input type="number" step="0.01" name="total" id="total" class="form-control text-end" value="{{ factura.total }}" required min="0.01" placeholder="0.00">
+                                    <div class="invalid-feedback d-block" id="error-total"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="estatus" class="form-label">Estatus</label>
+                                    <select name="estatus" id="estatus" class="form-select">
+                                        <option value="activa" {% if factura.estatus == 'activa' %}selected{% endif %}>Activa</option>
+                                        <option value="cancelada" {% if factura.estatus == 'cancelada' %}selected{% endif %}>Cancelada</option>
+                                        <option value="pagada" {% if factura.estatus == 'pagada' %}selected{% endif %}>Pagada</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-12">
+                                    <label class="form-label">Tercero</label>
+                                    <p class="form-control-plaintext fw-bold">{{ factura.tercero_nombre or 'N/A' }}</p>
+                                    <input type="hidden" id="tercero_nombre_js" value="{{ factura.tercero_nombre or 'N/A' }}">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a href="{{ url_for('facturas_view') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" form="formFactura" id="btnSubmit" class="btn btn-warning text-dark" disabled>
+                            💾 Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card shadow">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="mb-0 text-dark">📄 Vista Previa (Simulación)</h5>
+                        <a href="{{ url_for('exportar_factura_pdf_individual', id_factura=factura.id_factura) }}" class="btn btn-info">🖨️ Exportar PDF</a>
+                    </div>
+                    <div class="card-body bg-white p-4" id="vista-previa" style="min-height: 350px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<style>
+    /* Mismo estilo de impresión que crear.html */
+    @media print {
+        .no-print { display: none !important; }
+        .container { max-width: 100%; padding: 0 !important; margin: 0 !important; }
+        .row, .col-lg-6 { width: 100%; margin: 0 !important; padding: 0 !important; }
+        body * { visibility: hidden; }
+        #vista-previa, #vista-previa * { visibility: visible; }
+        #vista-previa {
+            position: absolute; left: 0; top: 0;
+            width: 100%; box-sizing: border-box; padding: 20px;
+            font-size: 14pt; border: none !important; box-shadow: none !important;
+        }
+    }
+    .invalid-feedback.d-block { font-size: 0.8em; }
+</style>
+
+<script>
+    const formFields = ['tipo', 'folio', 'fecha', 'fecha_vencimiento', 'total', 'estatus'];
+
+    // Funciones de utilidad
+    function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        try {
+            // El formato de fecha en Python es YYYY-MM-DD
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        } catch (e) { return 'Fecha inválida'; }
+    }
+    function formatCurrency(amount) {
+        const val = parseFloat(amount) || 0;
+        // Asumiendo moneda local (ej: Costa Rica, pero puedes cambiar el código 'CRC' y 'es-CR' según tu necesidad)
+        return new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC' }).format(val);
+    }
+    
+    // Función de vista previa adaptada para editar
+    function updateVistaPrevia() {
+        const data = {};
+        formFields.forEach(id => data[id] = document.getElementById(id)?.value || '');
+        const terceroNombre = document.getElementById('tercero_nombre_js')?.value || '—';
+
+        const tipoLabel = data.tipo === 'venta' ? 'FACTURA DE VENTA' : (data.tipo === 'compra' ? 'FACTURA DE COMPRA' : 'DOCUMENTO');
+        const tipoColor = data.tipo === 'venta' ? '#198754' : '#dc3545';
+        
+        const estatus = data.estatus || 'N/A';
+        let estatusColor = '#6c757d'; // gris
+        if (estatus === 'activa') estatusColor = '#198754'; // verde
+        else if (estatus === 'cancelada') estatusColor = '#dc3545'; // rojo
+        else if (estatus === 'pagada') estatusColor = '#0d6efd'; // azul
+        
+        const html = `
+            <div class="text-center mb-4">
+                <h2 style="color: ${tipoColor}; margin: 0;">${tipoLabel}</h2>
+                <p class="text-muted mb-0">Folio: <strong class="text-dark">${data.folio || '—'}</strong></p>
+                <span class="badge" style="background-color: ${estatusColor}; color: white;">${estatus.toUpperCase()}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                <div style="width: 60%;">
+                    <p class="mb-1"><strong>Tercero:</strong> ${terceroNombre}</p>
+                    <p class="mb-1"><strong>Tipo:</strong> ${data.tipo.charAt(0).toUpperCase() + data.tipo.slice(1)}</p>
+                </div>
+                <div class="text-end" style="width: 40%;">
+                    <p class="mb-1"><strong>Fecha:</strong> ${formatDate(data.fecha)}</p>
+                    <p class="mb-1"><strong>Vencimiento:</strong> ${formatDate(data.fecha_vencimiento)}</p>
+                </div>
+            </div>
+            <div class="text-end mt-4 pt-3 border-top border-2">
+                <p class="mb-0 text-muted">TOTAL NETO:</p>
+                <p style="font-size: 1.6em; color: ${tipoColor}; font-weight: bold;">${formatCurrency(data.total)}</p>
+            </div>
+            <div class="text-center mt-5">
+                <small class="text-muted">Vista previa de edición - Sistema Contable</small>
+            </div>
+        `;
+        document.getElementById('vista-previa').innerHTML = html;
+    }
+
+    function imprimirVistaPrevia() {
+        window.print();
+    }
+
+    // Validación
+    const validators = {
+        tipo: v => v ? '' : 'El tipo es requerido.',
+        folio: v => v.trim() ? '' : 'El folio es requerido.',
+        fecha: v => v ? '' : 'La fecha es requerida.',
+        total: v => v && !isNaN(v) && parseFloat(v) > 0 ? '' : 'El total debe ser mayor a 0.',
+        fecha_vencimiento: v => {
+            const f = document.getElementById('fecha').value;
+            if (!f) return ''; // No validar si fecha de emisión falta, ya lo valida fecha
+            
+            const dateToCheck = v;
+            if (dateToCheck && new Date(dateToCheck) < new Date(f)) {
+                 return 'Debe ser posterior o igual a la fecha de emisión.';
+            }
+            return '';
+        }
+    };
+
+    function runValidation(id) {
+        const el = document.getElementById(id);
+        if (!validators[id]) return true;
+        
+        const errorMsg = validators[id](el.value);
+        const errorEl = document.getElementById('error-' + id);
+        
+        errorEl.textContent = errorMsg;
+        el.classList.toggle('is-invalid', !!errorMsg);
+        
+        return !errorMsg;
+    }
+
+    function checkFormValidity() {
+        let isFormValid = true;
+        // Validar campos obligatorios y la relación de fechas
+        ['tipo', 'folio', 'fecha', 'total', 'fecha_vencimiento'].forEach(id => {
+            if (!runValidation(id)) {
+                isFormValid = false;
+            }
+        });
+        document.getElementById('btnSubmit').disabled = !isFormValid;
+    }
+
+    // Setup Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('input', () => {
+                    checkFormValidity();
+                    updateVistaPrevia();
+                });
+            }
+        });
+        checkFormValidity();
+        updateVistaPrevia();
+    });
+</script>
+{% endblock %}

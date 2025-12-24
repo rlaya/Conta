@@ -1,0 +1,67 @@
+<!-- templates/facturas/detalle.html -->
+
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Factura #{{ factura.id_factura }}</h3>
+                        <span class="badge 
+                            {% if factura.estatus == 'activa' %}bg-success
+                            {% elif factura.estatus == 'cancelada' %}bg-danger
+                            {% elif factura.estatus == 'pagada' %}bg-info
+                            {% else %}bg-secondary{% endif %}" style="font-size: 1em;">
+                            {{ factura.estatus.upper() }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <p class="mb-1"><strong>Tipo de Documento:</strong> {{ factura.tipo.capitalize() }}</p>
+                                <p class="mb-1"><strong>Folio:</strong> {{ factura.folio }}</p>
+                                <p class="mb-1"><strong>Tercero:</strong> {{ factura.tercero_nombre or 'N/A' }}</p>
+                            </div>
+                            <div class="col-sm-6 text-sm-end">
+                                <p class="mb-1"><strong>Fecha de Emisión:</strong> {{ factura.fecha }}</p>
+                                <p class="mb-1"><strong>Fecha Vencimiento:</strong> {{ factura.fecha_vencimiento or 'N/A' }}</p>
+                                <p class="mb-1"><strong>Asiento Contable ID:</strong> {{ factura.id_asiento or 'N/A' }}</p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
+                            <h4 class="mb-0 text-muted">Total de la Factura</h4>
+                            <h2 class="mb-0 text-primary">
+                                {{ "{:,.2f}".format(factura.total | float) }}
+                                </h2>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h5>Acciones</h5>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('editar_factura', id_factura=factura.id_factura) }}" class="btn btn-warning">✏️ Editar</a>
+                            
+                            {% if factura.estatus != 'cancelada' %}
+                            <form method="POST" action="{{ url_for('cancelar_factura_view', id_factura=factura.id_factura) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro de CANCELAR la factura? Se creará un asiento de anulación.')">❌ Cancelar</button>
+                            </form>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('exportar_factura_pdf_individual', id_factura=factura.id_factura) }}" class="btn btn-info">🖨️ Exportar PDF</a></a>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <a href="{{ url_for('facturas_view') }}" class="btn btn-outline-secondary btn-sm">← Volver a Facturas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% endblock %}

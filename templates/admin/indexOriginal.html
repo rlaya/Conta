@@ -1,0 +1,98 @@
+
+
+<<!-- templates/admin/index.html -->
+
+
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <header class="mb-5 border-bottom pb-3">
+        <h2 class="display-5 text-primary fw-bold">
+            ⚙️ Panel de Administración
+        </h2>
+        <p class="lead text-muted">Gestión centralizada de todos los módulos del sistema.</p>
+    </header>
+
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <a href="{{ url_for('menu') }}" class="btn btn-secondary me-2"><i class="bi bi-house-door-fill me-2"></i>Menú Principal</a>
+            </div>
+    </div>
+
+    <hr>
+
+    <section class="admin-modules">
+        <h3 class="h4 mb-4 text-secondary">Acceso Rápido a Módulos</h3>
+        
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            
+            
+            {% set module = {
+                'url': url_for('admin_clientes'), 
+                'icon': 'bi bi-people-fill', 
+                'title': 'Clientes', 
+                'description': 'Administración de la cartera de clientes y sus datos.'
+            } %}
+            {{ module_card(module) }}
+            
+            {% set module = {
+                'url': url_for('admin_proveedores'), 
+                'icon': 'bi bi-truck', 
+                'title': 'Proveedores', 
+                'description': 'Gestión de la información y contactos de los proveedores.'
+            } %}
+            {{ module_card(module) }}
+
+            {% set module = {
+                'url': url_for('admin_plan_cuentas'), 
+                'icon': 'bi bi-bar-chart-fill', 
+                'title': 'Plan de Cuentas', 
+                'description': 'Estructura y mantenimiento del plan contable.'
+            } %}
+            {{ module_card(module) }}
+
+            {% set module = {
+                'url': url_for('admin_cuentas_bancarias'), 
+                'icon': 'bi bi-bank', 
+                'title': 'Cuentas Bancarias', 
+                'description': 'Configuración de cuentas y movimientos bancarios.'
+            } %}
+            {{ module_card(module) }}
+
+            {% set module = {
+                'url': url_for('admin_usuarios'), 
+                'icon': 'bi bi-person-badge-fill', 
+                'title': 'Usuarios', 
+                'description': 'Creación y gestión de permisos de acceso al sistema.'
+            } %}
+            {{ module_card(module) }}
+
+            {% set module = {
+                'url': url_for('admin_tasas_iva'), 
+                'icon': 'bi bi-receipt-cutoff', 
+                'title': 'Tasas de IVA', 
+                'description': 'Definición y actualización de las tasas impositivas.'
+            } %}
+            {{ module_card(module) }}
+            
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% macro module_card(module) %}
+<div class="col">
+    <a href="{{ module.url }}" class="card shadow-sm h-100 text-decoration-none admin-card-link">
+        <div class="card-body d-flex flex-column align-items-start">
+            <i class="{{ module.icon }} text-primary mb-3" style="font-size: 2.5rem;"></i>
+            <h5 class="card-title text-dark mb-2">{{ module.title }}</h5>
+            <p class="card-text text-muted small">{{ module.description }}</p>
+            <span class="mt-auto fw-bold text-primary">Ir al Módulo &rarr;</span>
+        </div>
+    </a>
+</div>
+{% endmacro %}

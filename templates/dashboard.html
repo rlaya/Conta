@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Contable{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.3s ease;
+        border: none;
+        border-radius: 10px;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .alert-card {
+        border-left: 4px solid;
+    }
+    .alert-high {
+        border-left-color: #dc3545;
+    }
+    .alert-medium {
+        border-left-color: #ffc107;
+    }
+    .alert-low {
+        border-left-color: #6c757d;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,123,255,0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0"><i class="fas fa-chart-line text-primary me-2"></i>Dashboard Contable</h2>
+        <p class="text-muted">Bienvenido, <strong>{{ nombre }}</strong>! Última actualización: <span id="last-update"></span></p>
+    </div>
+</div>
+
+<!-- Resumen Ejecutivo -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="mb-3"><i class="fas fa-chart-bar me-2"></i>Resumen Ejecutivo</h4>
+    </div>
+    
+    <!-- Tarjetas de Resumen -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-primary border-4 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Ventas del Mes</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(summary.total_ventas|float) }}</h3>
+                    </div>
+                    <div class="bg-primary text-white rounded-circle p-3">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-arrow-up text-success me-1"></i>
+                        {{ "%.1f"|format(summary.margen_utilidad|float) }}% Margen
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-danger border-4 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Gastos del Mes</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(summary.total_gastos|float) }}</h3>
+                    </div>
+                    <div class="bg-danger text-white rounded-circle p-3">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-chart-line me-1"></i>
+                        {{ "%.1f"|format((summary.total_gastos/summary.total_ventas*100) if summary.total_ventas > 0 else 0) }}% de Ventas
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-success border-4 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Saldo Bancos</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(summary.saldo_bancos|float) }}</h3>
+                    </div>
+                    <div class="bg-success text-white rounded-circle p-3">
+                        <i class="fas fa-university fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-wallet me-1"></i>
+                        Total disponible
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-start border-warning border-4 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Utilidad Neta</h6>
+                        <h3 class="mb-0">${{ "%.2f"|format(summary.utilidad_neta|float) }}</h3>
+                    </div>
+                    <div class="bg-warning text-white rounded-circle p-3">
+                        <i class="fas fa-chart-pie fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-percentage me-1"></i>
+                        {{ "%.1f"|format(summary.margen_utilidad|float) }}% de Margen
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos Principales -->
+<div class="row mb-4">
+    <div class="col-xl-8 mb-4">
+        <div class="chart-container">
+            <h5><i class="fas fa-chart-bar me-2"></i>Ventas vs Gastos (Últimos 6 meses)</h5>
+            {% if ventas_chart %}
+                <div id="ventasChart" style="height: 400px;"></div>
+                <script>
+                    var ventasData = {{ ventas_chart|safe }};
+                    Plotly.newPlot('ventasChart', ventasData.data, ventasData.layout);
+                </script>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay datos para mostrar</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-xl-4 mb-4">
+        <div class="chart-container">
+            <h5><i class="fas fa-chart-pie me-2"></i>Distribución por Tipo de Cuenta</h5>
+            {% if saldos_chart %}
+                <div id="saldosChart" style="height: 400px;"></div>
+                <script>
+                    var saldosData = {{ saldos_chart|safe }};
+                    Plotly.newPlot('saldosChart', saldosData.data, saldosData.layout);
+                </script>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay datos para mostrar</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Segunda Fila: Tablas y Listados -->
+<div class="row">
+    <!-- Saldos por Cuenta -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Saldos por Cuenta</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cuenta</th>
+                                <th>Nombre</th>
+                                <th class="text-end">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in saldos %}
+                            <tr>
+                                <td><code>{{ s.codigo }}</code></td>
+                                <td>{{ s.nombre }}</td>
+                                <td class="text-end {% if s.saldo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    <strong>${{ "%.2f"|format(s.saldo|float) }}</strong>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    <i class="fas fa-database fa-2x mb-2"></i>
+                                    <p>No hay saldos registrados</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Facturas Recientes -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Facturas Recientes</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Folio</th>
+                                <th>Cliente/Proveedor</th>
+                                <th>Fecha</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in facturas %}
+                            <tr>
+                                <td>
+                                    <span class="badge {% if f.tipo == 'ingreso' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ f.folio }}
+                                    </span>
+                                </td>
+                                <td>{{ f.nombre_cliente_proveedor[:30] }}{% if f.nombre_cliente_proveedor|length > 30 %}...{% endif %}</td>
+                                <td>{{ f.fecha.strftime('%d/%m/%Y') if f.fecha else '' }}</td>
+                                <td class="text-end {% if f.tipo == 'ingreso' %}text-success{% else %}text-danger{% endif %}">
+                                    ${{ "%.2f"|format(f.total|float) }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="fas fa-file-invoice fa-2x mb-2"></i>
+                                    <p>No hay facturas recientes</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tercera Fila: Alertas y Conciliaciones -->
+<div class="row">
+    <!-- Alertas del Sistema -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-white border-bottom border-warning">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Alertas del Sistema</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for alerta in alertas %}
+                    <div class="list-group-item alert-card alert-{{ alerta.prioridad }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ alerta.tipo }}</h6>
+                                <p class="mb-0 text-muted small">{{ alerta.descripcion }}</p>
+                            </div>
+                            <span class="badge bg-{{ alerta.prioridad }}">
+                                {{ alerta.prioridad|title }}
+                            </span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
+                        <p class="text-muted mb-0">¡Todo está en orden!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Conciliaciones Pendientes -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Conciliaciones Pendientes</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Banco</th>
+                                <th>Periodo</th>
+                                <th class="text-end">Diferencia</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in conciliaciones %}
+                            <tr>
+                                <td>{{ c.nombre_banco }}</td>
+                                <td>
+                                    {{ c.fecha_inicio.strftime('%d/%m') if c.fecha_inicio else '' }} - 
+                                    {{ c.fecha_fin.strftime('%d/%m') if c.fecha_fin else '' }}
+                                </td>
+                                <td class="text-end {% if c.diferencia == 0 %}text-success{% else %}text-danger{% endif %}">
+                                    ${{ "%.2f"|format(c.diferencia|float) }}
+                                </td>
+                                <td>
+                                    <span class="badge {% if c.estatus == 'pendiente' %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ c.estatus|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                    <p>Todas las conciliaciones están al día</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cuarta Fila: Top Clientes y Movimientos -->
+<div class="row">
+    <!-- Top Clientes -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-crown me-2"></i>Top Clientes</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for cliente in top_clientes %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ cliente.nombre }}</h6>
+                            <small class="text-muted">{{ cliente.cantidad_facturas }} facturas</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">
+                            ${{ "%.2f"|format(cliente.total_compras|float) }}
+                        </span>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0">No hay datos de clientes</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Movimientos Bancarios -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>Últimos Movimientos Bancarios</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Banco</th>
+                                <th>Concepto</th>
+                                <th class="text-end">Monto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in movimientos %}
+                            <tr>
+                                <td>{{ m.nombre_banco }}</td>
+                                <td>{{ m.concepto[:25] }}{% if m.concepto|length > 25 %}...{% endif %}</td>
+                                <td class="text-end {% if m.monto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    ${{ "%.2f"|format(m.monto|float) }}
+                                </td>
+                                <td>
+                                    <span class="badge {% if m.estado == 'Conciliado' %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ m.estado }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <p>No hay movimientos recientes</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Actualizar timestamp
+    function updateTimestamp() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        document.getElementById('last-update').textContent = 
+            now.toLocaleDateString('es-ES', options);
+    }
+    
+    // Actualizar datos cada 5 minutos
+    function refreshDashboardData() {
+        fetch('/api/dashboard-data')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateTimestamp();
+                    // Aquí podrías actualizar elementos específicos del dashboard
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        updateTimestamp();
+        // Refrescar cada 5 minutos (300000 ms)
+        setInterval(refreshDashboardData, 300000);
+        
+        // Añadir tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

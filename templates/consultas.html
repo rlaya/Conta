@@ -1,0 +1,482 @@
+<!-- templates/consulta.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .menu-container {
+    display: flex;
+    flex-wrap: wrap;
+    min-height: 80vh;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .menu-lateral {
+    flex: 0 0 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .menu-lateral h2 {
+    color: #007bff;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .menu-item {
+    background-color: white;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+    color: #007bff;
+    text-decoration: none;
+    display: block;
+  }
+
+  .menu-item:hover {
+    background-color: #e6f0ff;
+  }
+
+  .menu-item.active {
+    background-color: #cce6ff;
+    border-color: #0056b3;
+    color: #0056b3;
+    font-weight: bold;
+  }
+
+  .contenido-dinamico {
+    flex: 1;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    min-height: 400px;
+    overflow-y: auto;
+  }
+
+  .reporte-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .reporte-card h4 {
+    color: #007bff;
+    margin-bottom: 1rem;
+  }
+
+  .filtros-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .btn-exportar {
+    margin-top: 0.5rem;
+  }
+
+  .resumen-estadisticas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .estadistica-card {
+    background: white;
+    border-left: 4px solid #007bff;
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .estadistica-card h5 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .estadistica-card .valor {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #007bff;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .menu-container {
+      flex-direction: column;
+    }
+
+    .menu-lateral {
+      flex: none;
+    }
+
+    .filtros-form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="menu-container">
+  <!-- Menú Lateral de Informes -->
+  <div class="menu-lateral">
+    <h2>Informes Contables</h2>
+    
+    <a href="#" class="menu-item active" data-content="balance-general">
+      <i class="bi bi-graph-up"></i> Balance General
+    </a>
+    
+    <a href="#" class="menu-item" data-content="estado-resultados">
+      <i class="bi bi-calculator"></i> Estado de Resultados
+    </a>
+    
+    <a href="#" class="menu-item" data-content="libro-diario">
+      <i class="bi bi-journal-text"></i> Libro Diario
+    </a>
+    
+    <a href="#" class="menu-item" data-content="mayor-general">
+      <i class="bi bi-journal-bookmark"></i> Mayor General
+    </a>
+    
+    <a href="#" class="menu-item" data-content="exportar">
+      <i class="bi bi-download"></i> Exportar Informes
+    </a>
+    
+    <a href="{{ url_for('menu') }}" class="menu-item">
+      <i class="bi bi-arrow-left"></i> Volver al Menú
+    </a>
+  </div>
+
+  <!-- Contenido Dinámico de Informes -->
+  <div class="contenido-dinamico" id="contenido-dinamico">
+    <!-- Contenido por defecto: Balance General -->
+    <div class="reporte-card">
+      <h4><i class="bi bi-graph-up"></i> Balance General</h4>
+      <p>Estado de la situación financiera de la empresa a una fecha específica.</p>
+      
+      <form action="{{ url_for('informes.balance_general') }}" method="GET" class="filtros-form">
+        <div class="form-group">
+          <label for="fecha">Fecha del Balance:</label>
+          <input type="date" id="fecha" name="fecha" class="form-control" 
+                 value="{{ datetime.now().strftime('%Y-%m-%d') }}">
+        </div>
+        
+        <div class="form-group">
+          <label for="nivel">Nivel de Detalle:</label>
+          <select id="nivel" name="nivel" class="form-control">
+            <option value="1">Nivel 1 (Consolidado)</option>
+            <option value="2">Nivel 2 (Intermedio)</option>
+            <option value="3" selected>Nivel 3 (Detallado)</option>
+          </select>
+        </div>
+        
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search"></i> Generar Balance
+          </button>
+        </div>
+      </form>
+      
+      <div class="btn-group" role="group">
+        <a href="{{ url_for('informes.exportar_informe', informe='balance-general', formato='pdf') }}?fecha={{ datetime.now().strftime('%Y-%m-%d') }}" 
+           class="btn btn-outline-primary btn-exportar">
+          <i class="bi bi-file-pdf"></i> PDF
+        </a>
+        <a href="{{ url_for('informes.exportar_informe', informe='balance-general', formato='excel') }}?fecha={{ datetime.now().strftime('%Y-%m-%d') }}" 
+           class="btn btn-outline-success btn-exportar">
+          <i class="bi bi-file-excel"></i> Excel
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const menuItems = document.querySelectorAll('.menu-item[data-content]');
+    const contenidoDiv = document.getElementById('contenido-dinamico');
+    const today = new Date().toISOString().split('T')[0];
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const contenidoMap = {
+      'balance-general': `
+        <div class="reporte-card">
+          <h4><i class="bi bi-graph-up"></i> Balance General</h4>
+          <p>Estado de la situación financiera de la empresa a una fecha específica.</p>
+          
+          <form action="{{ url_for('informes.balance_general') }}" method="GET" class="filtros-form">
+            <div class="form-group">
+              <label for="fecha-balance">Fecha del Balance:</label>
+              <input type="date" id="fecha-balance" name="fecha" class="form-control" value="${today}">
+            </div>
+            
+            <div class="form-group">
+              <label for="nivel-balance">Nivel de Detalle:</label>
+              <select id="nivel-balance" name="nivel" class="form-control">
+                <option value="1">Nivel 1 (Consolidado)</option>
+                <option value="2">Nivel 2 (Intermedio)</option>
+                <option value="3" selected>Nivel 3 (Detallado)</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Generar Balance
+              </button>
+            </div>
+          </form>
+          
+          <div class="btn-group" role="group">
+            <a href="#" class="btn btn-outline-primary btn-exportar" onclick="exportarBalance('pdf')">
+              <i class="bi bi-file-pdf"></i> PDF
+            </a>
+            <a href="#" class="btn btn-outline-success btn-exportar" onclick="exportarBalance('excel')">
+              <i class="bi bi-file-excel"></i> Excel
+            </a>
+          </div>
+        </div>
+      `,
+      
+      'estado-resultados': `
+        <div class="reporte-card">
+          <h4><i class="bi bi-calculator"></i> Estado de Resultados</h4>
+          <p>Muestra los ingresos, costos y gastos de un período para determinar la utilidad o pérdida.</p>
+          
+          <form action="{{ url_for('informes.estado_resultados') }}" method="GET" class="filtros-form">
+            <div class="form-group">
+              <label for="fecha-inicio-er">Fecha Inicio:</label>
+              <input type="date" id="fecha-inicio-er" name="fecha_inicio" class="form-control" value="${firstDayOfMonth}">
+            </div>
+            
+            <div class="form-group">
+              <label for="fecha-fin-er">Fecha Fin:</label>
+              <input type="date" id="fecha-fin-er" name="fecha_fin" class="form-control" value="${today}">
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Generar Estado
+              </button>
+            </div>
+          </form>
+          
+          <div class="btn-group" role="group">
+            <a href="#" class="btn btn-outline-primary btn-exportar" onclick="exportarEstadoResultados('pdf')">
+              <i class="bi bi-file-pdf"></i> PDF
+            </a>
+            <a href="#" class="btn btn-outline-success btn-exportar" onclick="exportarEstadoResultados('excel')">
+              <i class="bi bi-file-excel"></i> Excel
+            </a>
+          </div>
+        </div>
+      `,
+      
+      'libro-diario': `
+        <div class="reporte-card">
+          <h4><i class="bi bi-journal-text"></i> Libro Diario</h4>
+          <p>Registro cronológico de todas las transacciones contables.</p>
+          
+          <form action="{{ url_for('informes.libro_diario') }}" method="GET" class="filtros-form">
+            <div class="form-group">
+              <label for="fecha-inicio-ld">Fecha Inicio:</label>
+              <input type="date" id="fecha-inicio-ld" name="fecha_inicio" class="form-control" value="${thirtyDaysAgo}">
+            </div>
+            
+            <div class="form-group">
+              <label for="fecha-fin-ld">Fecha Fin:</label>
+              <input type="date" id="fecha-fin-ld" name="fecha_fin" class="form-control" value="${today}">
+            </div>
+            
+            <div class="form-group">
+              <label for="pagina">Página:</label>
+              <input type="number" id="pagina" name="pagina" class="form-control" value="1" min="1">
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Consultar Libro
+              </button>
+            </div>
+          </form>
+          
+          <div class="btn-group" role="group">
+            <a href="#" class="btn btn-outline-primary btn-exportar" onclick="exportarLibroDiario('pdf')">
+              <i class="bi bi-file-pdf"></i> PDF
+            </a>
+            <a href="#" class="btn btn-outline-success btn-exportar" onclick="exportarLibroDiario('excel')">
+              <i class="bi bi-file-excel"></i> Excel
+            </a>
+          </div>
+        </div>
+      `,
+      
+      'mayor-general': `
+        <div class="reporte-card">
+          <h4><i class="bi bi-journal-bookmark"></i> Mayor General</h4>
+          <p>Movimientos detallados de cada cuenta contable en un período.</p>
+          
+          <form action="{{ url_for('informes.mayor_general') }}" method="GET" class="filtros-form">
+            <div class="form-group">
+              <label for="fecha-inicio-mg">Fecha Inicio:</label>
+              <input type="date" id="fecha-inicio-mg" name="fecha_inicio" class="form-control" value="${firstDayOfMonth}">
+            </div>
+            
+            <div class="form-group">
+              <label for="fecha-fin-mg">Fecha Fin:</label>
+              <input type="date" id="fecha-fin-mg" name="fecha_fin" class="form-control" value="${today}">
+            </div>
+            
+            <div class="form-group">
+              <label for="cuenta-select">Cuenta (Opcional):</label>
+              <select id="cuenta-select" name="cuenta_id" class="form-control">
+                <option value="">Todas las cuentas</option>
+                <!-- Las opciones de cuentas se cargarán dinámicamente -->
+              </select>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Consultar Mayor
+              </button>
+            </div>
+          </form>
+          
+          <div class="btn-group" role="group">
+            <a href="#" class="btn btn-outline-primary btn-exportar" onclick="exportarMayorGeneral('pdf')">
+              <i class="bi bi-file-pdf"></i> PDF
+            </a>
+            <a href="#" class="btn btn-outline-success btn-exportar" onclick="exportarMayorGeneral('excel')">
+              <i class="bi bi-file-excel"></i> Excel
+            </a>
+          </div>
+        </div>
+        
+        <script>
+          // Cargar cuentas para el select
+          fetch('/api/cuentas')
+            .then(response => response.json())
+            .then(data => {
+              const select = document.getElementById('cuenta-select');
+              data.forEach(cuenta => {
+                const option = document.createElement('option');
+                option.value = cuenta.id;
+                option.textContent = cuenta.codigo + ' - ' + cuenta.nombre;
+                select.appendChild(option);
+              });
+            });
+        <\/script>
+      `,
+      
+      'exportar': `
+        <div class="reporte-card">
+          <h4><i class="bi bi-download"></i> Exportar Informes</h4>
+          <p>Descarga los informes en diferentes formatos para su análisis externo.</p>
+          
+          <div class="resumen-estadisticas">
+            <div class="estadistica-card">
+              <h5>Balance General</h5>
+              <div class="valor">PDF / Excel</div>
+              <p>Estado financiero a fecha específica</p>
+              <button class="btn btn-sm btn-outline-primary mt-2" onclick="exportarBalance('pdf')">
+                <i class="bi bi-download"></i> Exportar
+              </button>
+            </div>
+            
+            <div class="estadistica-card">
+              <h5>Estado de Resultados</h5>
+              <div class="valor">PDF / Excel</div>
+              <p>Pérdidas y ganancias por período</p>
+              <button class="btn btn-sm btn-outline-primary mt-2" onclick="exportarEstadoResultados('pdf')">
+                <i class="bi bi-download"></i> Exportar
+              </button>
+            </div>
+            
+            <div class="estadistica-card">
+              <h5>Libro Diario</h5>
+              <div class="valor">PDF / Excel</div>
+              <p>Transacciones cronológicas</p>
+              <button class="btn btn-sm btn-outline-primary mt-2" onclick="exportarLibroDiario('pdf')">
+                <i class="bi bi-download"></i> Exportar
+              </button>
+            </div>
+            
+            <div class="estadistica-card">
+              <h5>Mayor General</h5>
+              <div class="valor">PDF / Excel</div>
+              <p>Movimientos por cuenta</p>
+              <button class="btn btn-sm btn-outline-primary mt-2" onclick="exportarMayorGeneral('pdf')">
+                <i class="bi bi-download"></i> Exportar
+              </button>
+            </div>
+          </div>
+          
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle"></i>
+            <strong>Nota:</strong> Los informes se generan con los filtros predeterminados. 
+            Para filtros personalizados, utilice cada informe individualmente.
+          </div>
+        </div>
+      `
+    };
+
+    // Funciones para exportar
+    window.exportarBalance = function(formato) {
+      const fecha = document.getElementById('fecha-balance')?.value || today;
+      window.location.href = `/informes/exportar/balance-general/${formato}?fecha=${fecha}`;
+    };
+
+    window.exportarEstadoResultados = function(formato) {
+      const fechaInicio = document.getElementById('fecha-inicio-er')?.value || firstDayOfMonth;
+      const fechaFin = document.getElementById('fecha-fin-er')?.value || today;
+      window.location.href = `/informes/exportar/estado-resultados/${formato}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+    };
+
+    window.exportarLibroDiario = function(formato) {
+      const fechaInicio = document.getElementById('fecha-inicio-ld')?.value || thirtyDaysAgo;
+      const fechaFin = document.getElementById('fecha-fin-ld')?.value || today;
+      window.location.href = `/informes/exportar/libro-diario/${formato}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+    };
+
+    window.exportarMayorGeneral = function(formato) {
+      const fechaInicio = document.getElementById('fecha-inicio-mg')?.value || firstDayOfMonth;
+      const fechaFin = document.getElementById('fecha-fin-mg')?.value || today;
+      const cuentaId = document.getElementById('cuenta-select')?.value || '';
+      let url = `/informes/exportar/mayor-general/${formato}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+      if (cuentaId) url += `&cuenta_id=${cuentaId}`;
+      window.location.href = url;
+    };
+
+    menuItems.forEach(item => {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        // Remover clase active de todos
+        menuItems.forEach(i => i.classList.remove('active'));
+        // Añadir active al clickeado
+        this.classList.add('active');
+
+        const key = this.getAttribute('data-content');
+        if (contenidoMap[key]) {
+          contenidoDiv.innerHTML = contenidoMap[key];
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

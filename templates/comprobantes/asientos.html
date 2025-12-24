@@ -1,0 +1,358 @@
+<!-- templates/comprobantes/asientos.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asientos Contables - {{ comprobante.tipo }}-{{ comprobante.folio }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .comprobante-info {
+            background-color: #e3f2fd;
+            border-left: 4px solid #4e73df;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .table th {
+            background-color: #f1f3fa;
+            border-top: none;
+        }
+        .debe-amount {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .haber-amount {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .total-row {
+            background-color: #e8f5e9 !important;
+            font-weight: bold;
+        }
+        .action-buttons .btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        @media (max-width: 768px) {
+            .action-buttons .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+            .table-responsive {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1 text-primary">
+                    <i class="fas fa-book me-2"></i>Asientos Contables
+                </h1>
+                <p class="text-muted mb-0">Comprobante: {{ comprobante.tipo }}-{{ comprobante.folio }}</p>
+            </div>
+            <div>
+                <a href="{{ url_for('comprobantes.comprobantes') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i>Volver a Comprobantes
+                </a>
+                <a href="{{ url_for('comprobantes.ver_comprobante', tipo=comprobante.tipo, folio=comprobante.folio) }}" 
+                   class="btn btn-info">
+                    <i class="fas fa-eye me-1"></i>Ver Comprobante
+                </a>
+            </div>
+        </div>
+
+        <!-- Información del comprobante -->
+        <div class="comprobante-info">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Tipo:</strong> {{ comprobante.tipo }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Folio:</strong> {{ comprobante.folio }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Fecha:</strong> {% if comprobante.fecha is string %}
+                                            {{ comprobante.fecha }}
+                                            {% else %}
+                                            {{ comprobante.fecha.strftime('%d-%m-%Y') if comprobante.fecha else '' }}
+                                            {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <strong>Total:</strong> ${{ "{:,.2f}".format(comprobante.total) }}
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <strong>Concepto:</strong> {{ comprobante.concepto }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta principal -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Lista de Asientos</h5>
+                <a href="{{ url_for('comprobantes.nuevo_asiento', tipo=comprobante.tipo, folio=comprobante.folio) }}" 
+                   class="btn btn-light btn-sm">
+                    <i class="fas fa-plus me-1"></i>Nuevo Asiento
+                </a>
+            </div>
+            
+            <div class="card-body">
+                <!-- Filtros -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <form method="GET" action="{{ url_for('comprobantes.asientos', tipo=comprobante.tipo, folio=comprobante.folio) }}" 
+                              class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Cuenta</label>
+                                <input type="text" name="id_cuenta" class="form-control" placeholder="Código cuenta"
+                                       value="{{ request.args.get('id_cuenta', '') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Referencia</label>
+                                <input type="text" name="referencia" class="form-control" placeholder="Buscar referencia"
+                                       value="{{ request.args.get('referencia', '') }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Concepto</label>
+                                <input type="text" name="concepto" class="form-control" placeholder="Buscar concepto"
+                                       value="{{ request.args.get('concepto', '') }}">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-1"></i>Buscar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Botones de exportación -->
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="{{ url_for('comprobantes.asientos_excel', tipo=comprobante.tipo, folio=comprobante.folio, **request.args) }}" 
+                       class="btn btn-success me-2">
+                        <i class="fas fa-file-excel me-1"></i>Exportar a Excel
+                    </a>
+                    <a href="{{ url_for('comprobantes.asientos_pdf', tipo=comprobante.tipo, folio=comprobante.folio, **request.args) }}" 
+                       class="btn btn-danger">
+                        <i class="fas fa-file-pdf me-1"></i>Exportar a PDF
+                    </a>
+                </div>
+
+                <!-- Tabla de asientos -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cuenta</th>
+                                <th>Fecha</th>
+                                <th>Concepto</th>
+                                <th class="text-end">Debe</th>
+                                <th class="text-end">Haber</th>
+                                <th>Referencia</th>
+                                <th>Creado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_debe = namespace(value=0) %}
+                            {% set total_haber = namespace(value=0) %}
+                            {% for asiento in asientos.items %}
+                            {% set total_debe.value = total_debe.value + asiento.debe %}
+                            {% set total_haber.value = total_haber.value + asiento.haber %}
+                            <tr>
+                                <td>{{ asiento.consecutivo }}</td>
+                                <td><code>{{ asiento.id_cuenta }}</code></td>
+                                <td>
+                                    {% if asiento.fecha is string %}
+                                        {{ asiento.fecha }}
+                                    {% else %}
+                                        {{ asiento.fecha.strftime('%d/%m/%Y') if asiento.fecha else '' }}
+                                    {% endif %}
+                                </td>                                
+                                <td>{{ asiento.concepto[:60] }}{% if asiento.concepto|length > 60 %}...{% endif %}</td>
+                                <td class="text-end debe-amount">
+                                    {% if asiento.debe > 0 %}${{ "{:,.2f}".format(asiento.debe) }}{% endif %}
+                                </td>
+                                <td class="text-end haber-amount">
+                                    {% if asiento.haber > 0 %}${{ "{:,.2f}".format(asiento.haber) }}{% endif %}
+                                </td>
+                                <td>{{ asiento.referencia or '-' }}</td>
+                                <td>
+                                    {% if asiento.creado_en is string %}
+                                        {{ asiento.creado_en }}
+                                    {% else %}
+                                        {{ asiento.creado_en.strftime('%d/%m/%Y %H:%M') if asiento.creado_en else '' }}
+                                    {% endif %}
+                                </td>
+                                <td class="action-buttons">
+                                    <a href="{{ url_for('comprobantes.editar_asiento', tipo=asiento.id_comprobante_tipo, 
+                                              folio=asiento.id_comprobante_folio, consecutivo=asiento.consecutivo) }}" 
+                                       class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ asiento.consecutivo }}"
+                                            title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- Modal de confirmación para eliminar -->
+                            <div class="modal fade" id="deleteModal{{ asiento.consecutivo }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirmar Eliminación</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            ¿Está seguro de eliminar el asiento #{{ asiento.consecutivo }}?
+                                            <br><strong>Esta acción no se puede deshacer.</strong>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <a href="{{ url_for('comprobantes.eliminar_asiento', tipo=asiento.id_comprobante_tipo, 
+                                                   folio=asiento.id_comprobante_folio, consecutivo=asiento.consecutivo) }}" 
+                                               class="btn btn-danger">Eliminar</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Fila de totales -->
+                            <tr class="total-row">
+                                <td colspan="4" class="text-end"><strong>TOTALES:</strong></td>
+                                <td class="text-end"><strong>${{ "{:,.2f}".format(total_debe.value) }}</strong></td>
+                                <td class="text-end"><strong>${{ "{:,.2f}".format(total_haber.value) }}</strong></td>
+                                <td colspan="3">
+                                    {% if total_debe.value == total_haber.value %}
+                                    <span class="badge bg-success">CUADRADO</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">NO CUADRADO</span>
+                                    <small class="text-danger ms-2">
+                                        Diferencia: ${{ "{:,.2f}".format((total_debe.value - total_haber.value)|abs) }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if asientos.pages > 1 %}
+                <nav aria-label="Paginación">
+                    <ul class="pagination justify-content-center">
+                        {% if asientos.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('comprobantes.asientos', tipo=comprobante.tipo, folio=comprobante.folio, 
+                               page=asientos.prev_num, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in asientos.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == asientos.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('comprobantes.asientos', tipo=comprobante.tipo, folio=comprobante.folio, 
+                                       page=page_num, **request.args) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if asientos.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('comprobantes.asientos', tipo=comprobante.tipo, folio=comprobante.folio, 
+                               page=asientos.next_num, **request.args) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Inicializar DataTables
+            $('table').DataTable({
+                "paging": false,
+                "searching": false,
+                "info": false,
+                "ordering": true,
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json"
+                }
+            });
+            
+            // Confirmación antes de eliminar
+            $('.btn-danger[href*="eliminar"]').on('click', function(e) {
+                if (!confirm('¿Está seguro de eliminar este registro? Esta acción no se puede deshacer.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

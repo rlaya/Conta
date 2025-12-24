@@ -1,0 +1,679 @@
+<!-- templates/informes/mayor_general.html -->
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con título y botones -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Mayor General</h2>
+        <div>
+            <a href="{{ url_for('informes.menu_informes') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Volver a Informes
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('informes.exportar_informe', informe='mayor-general', formato='excel', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, cuenta_id=cuenta_id) }}">
+                            <i class="fas fa-file-excel text-success me-2"></i>Excel
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('informes.exportar_informe', informe='mayor-general', formato='pdf', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, cuenta_id=cuenta_id) }}">
+                            <i class="fas fa-file-pdf text-danger me-2"></i>PDF
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-filter me-2"></i>Filtros del Mayor General</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" 
+                           id="fecha_inicio" 
+                           name="fecha_inicio" 
+                           class="form-control" 
+                           value="{{ fecha_inicio }}"
+                           max="{{ fecha_fin }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                    <input type="date" 
+                           id="fecha_fin" 
+                           name="fecha_fin" 
+                           class="form-control" 
+                           value="{{ fecha_fin }}"
+                           min="{{ fecha_inicio }}"
+                           max="{{ today }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="cuenta_id" class="form-label">Cuenta Específica</label>
+                    <select id="cuenta_id" name="cuenta_id" class="form-select">
+                        <option value="">Todas las cuentas</option>
+                        {% for cuenta in cuentas %}
+                        <option value="{{ cuenta[0] }}" 
+                                {% if cuenta_id|string == cuenta[0]|string %}selected{% endif %}>
+                            {{ cuenta[1] }} - {{ cuenta[2] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i>Generar
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Botones de acción rápida -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('informes.mayor_general', fecha_inicio=primer_dia_mes, fecha_fin=hoy) }}" 
+                           class="btn btn-sm btn-outline-primary">Mes Actual</a>
+                        
+                        <a href="{{ url_for('informes.mayor_general', fecha_inicio=hace_30_dias, fecha_fin=hoy) }}" 
+                           class="btn btn-sm btn-outline-primary">Últimos 30 días</a>
+                        
+                        <a href="{{ url_for('informes.mayor_general') }}" 
+                           class="btn btn-sm btn-outline-secondary">Restablecer</a>
+                    </div>
+                </div>
+            </div>          
+
+        </div>
+    </div>
+
+    <!-- Resumen de Cuentas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-list-ol me-2"></i>Cuentas Analizadas</h5>
+                    <h2 class="mb-0">
+                        {% if cuenta_id %}
+                        1
+                        {% else %}
+                        {{ cuentas|length }}
+                        {% endif %}
+                    </h2>
+                    <small>
+                        {% if cuenta_id %}
+                        Cuenta específica
+                        {% else %}
+                        Todas las cuentas de mayor
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-exchange-alt me-2"></i>Movimientos</h5>
+                    <h2 class="mb-0">{{ movimientos|length }}</h2>
+                    <small>Registros en el período</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-calendar-alt me-2"></i>Período</h5>
+                    <h4 class="mb-0">{{ fecha_inicio }} a {{ fecha_fin }}</h4>
+                    <small>{{ dias_periodo }} días</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de cuenta si no hay cuenta específica -->
+    {% if not cuenta_id %}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-th-list me-2"></i>Selección Rápida de Cuenta</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for cuenta in cuentas|batch(6) %}
+                <div class="col-md-12">
+                    <div class="d-flex flex-wrap">
+                        {% for c in cuenta %}
+                        <a href="{{ url_for('informes.mayor_general', fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, cuenta_id=c[0]) }}" 
+                           class="btn btn-outline-primary btn-sm m-1">
+                            <i class="fas fa-file-invoice-dollar me-1"></i>{{ c[1] }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información de la cuenta seleccionada -->
+    {% if cuenta_id and saldos_iniciales %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Información de la Cuenta</h5>
+        </div>
+        <div class="card-body">
+            {% for saldo in saldos_iniciales %}
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Código:</strong>
+                    <h4><span class="badge bg-primary">{{ saldo[0] }}</span></h4>
+                </div>
+                <div class="col-md-5">
+                    <strong>Nombre:</strong>
+                    <h4>{{ saldo[1] }}</h4>
+                </div>
+                <div class="col-md-4">
+                    <strong>Saldo Inicial:</strong>
+                    <h4 class="{% if saldo[2] >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "₵{:,.2f}".format(saldo[2]) }}
+                    </h4>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla del Mayor General -->
+    <div class="card mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>
+                {% if cuenta_id %}
+                Movimientos de Cuenta Específica
+                {% else %}
+                Mayor General de Todas las Cuentas
+                {% endif %}
+            </h5>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary" id="btnExpandirTodo">
+                    <i class="fas fa-expand-alt me-1"></i>Expandir Todo
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="tablaMayor">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="10%">Código</th>
+                            <th>Cuenta</th>
+                            <th width="10%" class="text-center">Fecha</th>
+                            <th width="10%">Comprobante</th>
+                            <th width="25%">Concepto</th>
+                            <th width="10%" class="text-end">Débito</th>
+                            <th width="10%" class="text-end">Crédito</th>
+                            <th width="15%" class="text-end">Saldo Acumulado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set cuenta_actual = '' %}
+                        {% set primera_cuenta = true %}
+                        
+                        {% for movimiento in movimientos %}
+                            {% if movimiento[0] != cuenta_actual %}
+                                {% if not primera_cuenta %}
+                                    <!-- Total de la cuenta anterior -->
+                                    <tr class="table-active">
+                                        <td colspan="5" class="text-end fw-bold">
+                                            TOTAL {{ cuenta_actual }}:
+                                        </td>
+                                        <td class="text-end fw-bold text-success">
+                                            {{ "₵{:,.2f}".format(total_debe_cuenta) }}
+                                        </td>
+                                        <td class="text-end fw-bold text-danger">
+                                            {{ "₵{:,.2f}".format(total_haber_cuenta) }}
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            {% set saldo_final_cuenta = saldo_inicial_cuenta + total_debe_cuenta - total_haber_cuenta %}
+                                            <span class="{% if saldo_final_cuenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ "₵{:,.2f}".format(saldo_final_cuenta) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                
+                                <!-- Nueva cuenta -->
+                                {% set cuenta_actual = movimiento[0] %}
+                                {% set primera_cuenta = false %}
+                                {% set total_debe_cuenta = 0 %}
+                                {% set total_haber_cuenta = 0 %}
+                                {% set saldo_inicial_cuenta = 0 %}
+                                
+                                <!-- Encontrar saldo inicial para esta cuenta -->
+                                {% for saldo in saldos_iniciales %}
+                                    {% if saldo[0] == cuenta_actual %}
+                                        {% set saldo_inicial_cuenta = saldo[2] %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <!-- Encabezado de cuenta -->
+                                <tr class="table-primary fw-bold" data-cuenta="{{ cuenta_actual }}">
+                                    <td colspan="8">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>
+                                                <i class="fas fa-folder me-2"></i>
+                                                {{ movimiento[0] }} - {{ movimiento[1] }}
+                                                <small class="ms-3">
+                                                    Saldo Inicial: 
+                                                    <span class="{% if saldo_inicial_cuenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                        {{ "₵{:,.2f}".format(saldo_inicial_cuenta) }}
+                                                    </span>
+                                                </small>
+                                            </span>
+                                            <button class="btn btn-sm btn-light toggle-cuenta" 
+                                                    data-cuenta="{{ cuenta_actual }}">
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Primer movimiento con saldo inicial -->
+                                <tr class="movimiento-cuenta-{{ cuenta_actual }}">
+                                    <td colspan="5" class="text-muted text-center">
+                                        <i class="fas fa-history me-1"></i>Saldo Inicial
+                                    </td>
+                                    <td class="text-end text-muted">-</td>
+                                    <td class="text-end text-muted">-</td>
+                                    <td class="text-end fw-bold {% if saldo_inicial_cuenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ "₵{:,.2f}".format(saldo_inicial_cuenta) }}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                            
+                            <!-- Movimiento normal -->
+                            <tr class="movimiento-cuenta-{{ cuenta_actual }}">
+                                <td>
+                                    <span class="badge bg-secondary">{{ movimiento[0] }}</span>
+                                </td>
+                                <td>
+                                    <small>{{ movimiento[1] }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark">
+                                        {{ movimiento[2].strftime('%d/%m/%y') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="#" class="text-decoration-none">
+                                        {{ movimiento[3] }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;">
+                                        {{ movimiento[4] }}
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    {% if movimiento[5] > 0 %}
+                                    <span class="fw-bold text-success">
+                                        {{ "₵{:,.2f}".format(movimiento[5]) }}
+                                    </span>
+                                    {% set total_debe_cuenta = total_debe_cuenta + movimiento[5] %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if movimiento[6] > 0 %}
+                                    <span class="fw-bold text-danger">
+                                        {{ "₵{:,.2f}".format(movimiento[6]) }}
+                                    </span>
+                                    {% set total_haber_cuenta = total_haber_cuenta + movimiento[6] %}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold">
+                                    {% set saldo_acumulado = movimiento[8] + saldo_inicial_cuenta %}
+                                    <span class="{% if saldo_acumulado >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        {{ "₵{:,.2f}".format(saldo_acumulado) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-file-invoice-dollar fa-3x mb-3"></i><br>
+                                    <h5>No hay movimientos</h5>
+                                    <p>
+                                        {% if cuenta_id %}
+                                        No se encontraron movimientos para la cuenta seleccionada
+                                        {% else %}
+                                        No se encontraron movimientos para el período seleccionado
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Total de la última cuenta -->
+                        {% if movimientos and not cuenta_id %}
+                        <tr class="table-active">
+                            <td colspan="5" class="text-end fw-bold">
+                                TOTAL {{ cuenta_actual }}:
+                            </td>
+                            <td class="text-end fw-bold text-success">
+                                {{ "₵{:,.2f}".format(total_debe_cuenta) }}
+                            </td>
+                            <td class="text-end fw-bold text-danger">
+                                {{ "₵{:,.2f}".format(total_haber_cuenta) }}
+                            </td>
+                            <td class="text-end fw-bold">
+                                {% set saldo_final_cuenta = saldo_inicial_cuenta + total_debe_cuenta - total_haber_cuenta %}
+                                <span class="{% if saldo_final_cuenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {{ "₵{:,.2f}".format(saldo_final_cuenta) }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen por tipo de cuenta -->
+    {% if not cuenta_id %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Resumen por Tipo de Cuenta</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Cuentas</th>
+                                    <th class="text-end">Movimientos</th>
+                                    <th class="text-end">Saldo Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Aquí iría un resumen calculado por tipo de cuenta -->
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">
+                                        <i class="fas fa-calculator me-2"></i>
+                                        El resumen por tipo se generaría con datos reales
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Información del Mayor General</h5>
+                </div>
+                <div class="card-body">
+                    <h6>¿Qué es el Mayor General?</h6>
+                    <p class="small">
+                        El Mayor General es un registro que muestra todos los movimientos de cada cuenta contable,
+                        permitiendo ver el historial completo y el saldo actualizado de cada una.
+                    </p>
+                    
+                    <h6 class="mt-3">Características:</h6>
+                    <ul class="small">
+                        <li><strong>Organización por cuenta:</strong> Cada cuenta tiene su propio historial</li>
+                        <li><strong>Saldo acumulado:</strong> Muestra el saldo después de cada movimiento</li>
+                        <li><strong>Filtros:</strong> Puede verse por cuenta específica o todas</li>
+                        <li><strong>Exportación:</strong> Se puede exportar a Excel o PDF</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Información adicional -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Opciones Avanzadas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Funcionalidades:</h6>
+                    <ul>
+                        <li><i class="fas fa-search text-primary me-2"></i>Búsqueda por cuenta específica</li>
+                        <li><i class="fas fa-calendar text-success me-2"></i>Filtro por período personalizado</li>
+                        <li><i class="fas fa-download text-info me-2"></i>Exportación a múltiples formatos</li>
+                        <li><i class="fas fa-expand-alt text-warning me-2"></i>Vista expandible/colapsable</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Recomendaciones:</h6>
+                    <ul>
+                        <li>Use cuentas específicas para análisis detallado</li>
+                        <li>Exporte a Excel para análisis avanzado</li>
+                        <li>Compare períodos diferentes para tendencias</li>
+                        <li>Revise cuentas con mayor movimiento</li>
+                    </ul>
+                </div>
+            </div>
+            {% if error %}
+            <div class="alert alert-danger mt-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error al generar el informe:</strong> {{ error }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    background-color: #212529;
+    z-index: 10;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.badge {
+    font-size: 0.85em;
+}
+
+.text-truncate {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.movimiento-cuenta {
+    display: table-row;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+    }
+    
+    .text-truncate {
+        max-width: 100px;
+    }
+    
+    .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .btn-sm {
+        margin-bottom: 5px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar fechas
+    const today = new Date().toISOString().split('T')[0];
+    
+    document.getElementById('fecha_inicio').addEventListener('change', function() {
+        document.getElementById('fecha_fin').min = this.value;
+        if (document.getElementById('fecha_fin').value) {
+            document.querySelector('form').submit();
+        }
+    });
+    
+    document.getElementById('fecha_fin').addEventListener('change', function() {
+        document.getElementById('fecha_inicio').max = this.value;
+        if (document.getElementById('fecha_inicio').value) {
+            document.querySelector('form').submit();
+        }
+    });
+    
+    // Auto-submit al cambiar cuenta
+    document.getElementById('cuenta_id').addEventListener('change', function() {
+        document.querySelector('form').submit();
+    });
+    
+    // Función para expandir/colapsar cuentas
+    function toggleCuenta(cuentaCodigo) {
+        const movimientos = document.querySelectorAll(`.movimiento-cuenta-${cuentaCodigo}`);
+        const toggleBtn = document.querySelector(`button[data-cuenta="${cuentaCodigo}"] i`);
+        
+        if (movimientos[0].style.display === 'none') {
+            // Mostrar movimientos
+            movimientos.forEach(mov => {
+                mov.style.display = 'table-row';
+            });
+            toggleBtn.classList.remove('fa-chevron-right');
+            toggleBtn.classList.add('fa-chevron-down');
+        } else {
+            // Ocultar movimientos
+            movimientos.forEach(mov => {
+                mov.style.display = 'none';
+            });
+            toggleBtn.classList.remove('fa-chevron-down');
+            toggleBtn.classList.add('fa-chevron-right');
+        }
+    }
+    
+    // Event listeners para botones de toggle
+    document.querySelectorAll('.toggle-cuenta').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const cuentaCodigo = this.getAttribute('data-cuenta');
+            toggleCuenta(cuentaCodigo);
+        });
+    });
+    
+    // Botón para expandir todo
+    document.getElementById('btnExpandirTodo').addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        const todasCuentas = document.querySelectorAll('[data-cuenta]');
+        
+        if (icon.classList.contains('fa-expand-alt')) {
+            // Expandir todo
+            todasCuentas.forEach(cuenta => {
+                const cuentaCodigo = cuenta.getAttribute('data-cuenta');
+                const movimientos = document.querySelectorAll(`.movimiento-cuenta-${cuentaCodigo}`);
+                const toggleBtn = cuenta.querySelector('.toggle-cuenta i');
+                
+                movimientos.forEach(mov => {
+                    mov.style.display = 'table-row';
+                });
+                if (toggleBtn) {
+                    toggleBtn.classList.remove('fa-chevron-right');
+                    toggleBtn.classList.add('fa-chevron-down');
+                }
+            });
+            
+            icon.classList.remove('fa-expand-alt');
+            icon.classList.add('fa-compress-alt');
+            this.innerHTML = '<i class="fas fa-compress-alt me-1"></i>Colapsar Todo';
+        } else {
+            // Colapsar todo
+            todasCuentas.forEach(cuenta => {
+                const cuentaCodigo = cuenta.getAttribute('data-cuenta');
+                const movimientos = document.querySelectorAll(`.movimiento-cuenta-${cuentaCodigo}`);
+                const toggleBtn = cuenta.querySelector('.toggle-cuenta i');
+                
+                movimientos.forEach(mov => {
+                    mov.style.display = 'none';
+                });
+                if (toggleBtn) {
+                    toggleBtn.classList.remove('fa-chevron-down');
+                    toggleBtn.classList.add('fa-chevron-right');
+                }
+            });
+            
+            icon.classList.remove('fa-compress-alt');
+            icon.classList.add('fa-expand-alt');
+            this.innerHTML = '<i class="fas fa-expand-alt me-1"></i>Expandir Todo';
+        }
+    });
+    
+    // Inicializar todas las cuentas expandidas
+    document.querySelectorAll('[data-cuenta]').forEach(cuenta => {
+        const cuentaCodigo = cuenta.getAttribute('data-cuenta');
+        const movimientos = document.querySelectorAll(`.movimiento-cuenta-${cuentaCodigo}`);
+        const toggleBtn = cuenta.querySelector('.toggle-cuenta i');
+        
+        if (toggleBtn) {
+            toggleBtn.classList.remove('fa-chevron-right');
+            toggleBtn.classList.add('fa-chevron-down');
+        }
+    });
+    
+    // Resaltar filas al pasar el mouse
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('table-primary')) {
+                this.style.backgroundColor = 'rgba(0, 123, 255, 0.05)';
+            }
+        });
+        row.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('table-primary')) {
+                this.style.backgroundColor = '';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

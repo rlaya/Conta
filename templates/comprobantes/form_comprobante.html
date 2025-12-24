@@ -1,0 +1,263 @@
+<!-- templates/comprobantes/form_comprobante.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if comprobante %}Editar{% else %}Nuevo{% endif %} Comprobante</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 10px 30px;
+        }
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        .required:after {
+            content: " *";
+            color: red;
+        }
+        .form-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .currency-input {
+            position: relative;
+        }
+        .currency-input:before {
+            content: "$";
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+        .currency-input input {
+            padding-left: 25px;
+        }
+        @media (max-width: 768px) {
+            .form-section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0 text-primary">
+                <i class="fas fa-file-invoice me-2"></i>
+                {% if comprobante %}Editar{% else %}Nuevo{% endif %} Comprobante
+            </h1>
+            <a href="{{ url_for('comprobantes.comprobantes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver a Comprobantes
+            </a>
+        </div>
+
+        <!-- Formulario -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    {% if comprobante %}Editar{% else %}Crear{% endif %} Comprobante
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Sección de información básica -->
+                    <div class="form-section">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fas fa-info-circle me-2"></i>Información Básica
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label required">Tipo</label>
+                                {{ form.tipo(class="form-control" + (" is-invalid" if form.tipo.errors else "")) }}
+                                {% if form.tipo.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.tipo.errors[0] }}
+                                </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Ej: FACTURA, RECIBO, NOTA</small>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label required">Folio</label>
+                                {{ form.folio(class="form-control" + (" is-invalid" if form.folio.errors else "")) }}
+                                {% if form.folio.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.folio.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label required">Fecha</label>
+                                {{ form.fecha(class="form-control" + (" is-invalid" if form.fecha.errors else ""), type="date") }}
+                                {% if form.fecha.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.fecha.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label class="form-label required">Estado</label>
+                                {{ form.estado(class="form-select" + (" is-invalid" if form.estado.errors else "")) }}
+                                {% if form.estado.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.estado.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de conceptos y montos -->
+                    <div class="form-section">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fas fa-money-bill-wave me-2"></i>Concepto y Montos
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label required">Concepto</label>
+                                {{ form.concepto(class="form-control" + (" is-invalid" if form.concepto.errors else ""), rows="3") }}
+                                {% if form.concepto.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.concepto.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label required">Total</label>
+                                <div class="currency-input">
+                                    {{ form.total(class="form-control" + (" is-invalid" if form.total.errors else ""), step="0.01") }}
+                                </div>
+                                {% if form.total.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.total.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de cliente/proveedor -->
+                    <div class="form-section">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fas fa-users me-2"></i>Cliente o Proveedor
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">ID Cliente</label>
+                                {{ form.id_cliente(class="form-control" + (" is-invalid" if form.id_cliente.errors else ""), type="number") }}
+                                {% if form.id_cliente.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.id_cliente.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">ID Proveedor</label>
+                                {{ form.id_proveedor(class="form-control" + (" is-invalid" if form.id_proveedor.errors else ""), type="number") }}
+                                {% if form.id_proveedor.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.id_proveedor.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Complete solo uno de los campos: Cliente o Proveedor</small>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('comprobantes.comprobantes') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-submit">
+                                    <i class="fas fa-save me-1"></i>
+                                    {% if comprobante %}Actualizar{% else %}Guardar{% endif %} Comprobante
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Formato automático para campos numéricos
+            const totalInput = document.querySelector('input[name="total"]');
+            if (totalInput) {
+                totalInput.addEventListener('blur', function() {
+                    if (this.value) {
+                        this.value = parseFloat(this.value).toFixed(2);
+                    }
+                });
+            }
+            
+            // Validación: solo uno de los dos campos (cliente o proveedor)
+            const idCliente = document.querySelector('input[name="id_cliente"]');
+            const idProveedor = document.querySelector('input[name="id_proveedor"]');
+            
+            if (idCliente && idProveedor) {
+                idCliente.addEventListener('input', function() {
+                    if (this.value && idProveedor.value) {
+                        idProveedor.value = '';
+                    }
+                });
+                
+                idProveedor.addEventListener('input', function() {
+                    if (this.value && idCliente.value) {
+                        idCliente.value = '';
+                    }
+                });
+            }
+            
+            // Focus en el primer campo al cargar
+            const firstInput = document.querySelector('input:not([type="hidden"])');
+            if (firstInput) firstInput.focus();
+        });
+    </script>
+</body>
+</html>

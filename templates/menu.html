@@ -1,0 +1,203 @@
+<!-- templates/menu.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .menu-container {
+    display: flex;
+    flex-wrap: wrap;
+    min-height: 80vh;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .menu-lateral {
+    flex: 0 0 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .menu-lateral h2 {
+    color: #007bff;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .menu-item {
+    background-color: white;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+    color: #007bff;
+    text-decoration: none;
+    display: block;
+  }
+
+  .menu-item:hover {
+    background-color: #e6f0ff;
+  }
+
+  .menu-item.active {
+    background-color: #cce6ff;
+    border-color: black;
+    color: white;
+    font-weight: bold;
+  }
+
+  .contenido-dinamico {
+    flex: 1;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    min-height: 400px;
+  }
+
+  .submenu {
+    display: none;
+    margin-top: 1rem;
+    padding-left: 1rem;
+  }
+
+  .submenu.active {
+    display: block;
+  }
+
+  .submenu a {
+    display: block;
+    margin-top: 0.5rem;
+    color: #007bff;
+    text-decoration: underline;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .menu-container {
+      flex-direction: column;
+    }
+
+    .menu-lateral {
+      flex: none;
+    }
+  }
+</style>
+
+<div class="menu-container">
+  <!-- Menú Lateral -->
+  <div class="menu-lateral">
+    <h2>Menú Principal</h2>
+    
+    {% if rol_id in [1, 2, 3] %}
+    <a href="#" class="menu-item active" data-content="consultas"><i class="bi bi-diagram-3"></i> Consultas</a>
+    {% endif %}
+  
+    {% if rol_id in [1, 2] %}
+    <a href="#" class="menu-item" data-content="Comprobantes"><i class="bi bi-file-earmark-spreadsheet"></i> Comprobantes</a>
+    <a href="#" class="menu-item" data-content="facturas"><i class="bi bi-journal-richtext"></i> Facturas</a>    
+    <a href="#" class="menu-item" data-content="conciliaciones"><i class="bi bi-inbox"></i>  Conciliaciones</a>
+    
+    {% endif %}
+
+    {% if rol_id in [1] %}
+    <a href="#" class="menu-item" data-content="admin"><i class="bi bi-collection"></i> Panel Admin</a>
+    <a href="#" class="menu-item" data-content="dashboard"><i class="bi bi-graph-up"></i> Dashboard</a>
+    {% endif %}    
+
+    <a href="{{ url_for('logout') }}" class="menu-item"><i class="bi bi-arrow-left-square"></i> Salir</a>
+  </div>
+
+  <!-- Contenido Dinámico -->
+  <div class="contenido-dinamico" id="contenido-dinamico">
+    <!-- Contenido por defecto: Dashboard -->
+    <h3><i class="bi bi-diagram-3"></i> Bienvenido al Módulo de Consultas</h3>
+    <p>Selecciona una opción del menú para ver información detallada.</p>
+    <img src="{{ url_for('static', filename='img/Consultas.jpg') }}" alt="Consultas"
+    style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;"> 
+    <a href="{{ url_for('informes.menu_informes') }}" class="btn btn-primary mt-2"><i class="bi bi-graph-up"></i> Ir a Consultas</a>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const menuItems = document.querySelectorAll('.menu-item[data-content]');
+    const contenidoDiv = document.getElementById('contenido-dinamico');
+
+    const contenidoMap = {
+      consultas: `
+        <h3><i class="bi bi-diagram-3"></i> Consultas</h3>
+        <p>Accede a reportes y consultas contables.</p>
+        <img src="{{ url_for('static', filename='img/Consultas.jpg') }}" alt="Consultas"
+        style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;"> 
+        <a href="{{ url_for('informes.menu_informes') }}" class="btn btn-primary">
+        <i class="bi bi-diagram-3"></i> Menu de Consultas</a>        
+      `,
+      Comprobantes: `
+        <h3><i class="bi bi-file-earmark-spreadsheet"></i> Comprobantes Contables</h3>
+        <p>Consulta de asientos contables registrados.</p>
+        <img src="{{ url_for('static', filename='img/Asientos.jpg') }}" alt="Comprobantes"
+        style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;">
+        <a href="{{ url_for('comprobantes.comprobantes') }}" class="btn btn-primary"><i class="bi bi-file-earmark-spreadsheet"></i> Ver Comprobantes Contables</a>
+      `,  
+      facturas: `
+        <h3><i class="bi bi-journal-richtext"></i> Facturas</h3>
+        <p>Lista y gestión de facturas emitidas y recibidas.</p>
+        <img src="{{ url_for('static', filename='img/Facturas.jpg') }}" alt="Facturas"
+        style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;">
+        <a href="{{ url_for('facturas_view') }}" class="btn btn-primary"><i class="bi bi-journal-richtext"></i> Administrar Facturas</a>
+      `,
+      
+      conciliaciones: `
+        <h3><i class="bi bi-inbox"></i> Conciliaciones</h3>
+        <p>Conciliación bancaria y contable.</p>
+        <img src="{{ url_for('static', filename='img/Conciliacion.jpg') }}" alt="Conciliación"
+        style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;">
+        <a href="{{ url_for('conciliaciones_listar') }}" class="btn btn-primary"><i class="bi bi-inbox"></i> Ver Conciliaciones</a>
+      `,
+      admin: `
+        <h3><i class="bi bi-collection"></i> Panel Admin</h3>
+        <p>Configuración del sistema y gestión de usuarios.</p>
+       <img src="{{ url_for('static', filename='img/Panel.jpg') }}" alt="Conciliación"
+        style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;">        
+        <a href="{{ url_for('admin_panel') }}" class="btn btn-primary"><i class="bi bi-collection"></i> Ir al Panel</a>
+      `,
+      dashboard: `
+        <h3><i class="bi bi-graph-up"></i> Dashboard</h3>
+        <p>Resumen de actividades recientes.</p>
+        <img src="{{ url_for('static', filename='img/Dashboard.jpg') }}" alt="Dashboard" 
+        style="max-width:40%; max-height: 40% border-radius:8px; margin-top:1rem;">
+        <a href="{{ url_for('dashboard_view') }}" class="btn btn-primary"><i class="bi bi-graph-up"></i> Ver Dashboard</a>
+      `
+    };
+
+    menuItems.forEach(item => {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        // Remover clase active de todos
+        menuItems.forEach(i => i.classList.remove('active'));
+        // Añadir active al clickeado
+        this.classList.add('active');
+
+        const key = this.getAttribute('data-content');
+        if (contenidoMap[key]) {
+          contenidoDiv.innerHTML = contenidoMap[key];
+
+          // Si es "consultas", activar el botón de submenú
+          if (key === 'consultas') {
+            const toggleBtn = document.getElementById('toggle-submenu');
+            const submenu = document.getElementById('submenu-consultas');
+            toggleBtn.addEventListener('click', function () {
+              submenu.classList.toggle('active');
+              toggleBtn.textContent = submenu.classList.contains('active') ? 'Ocultar Submenú' : 'Mostrar Submenú';
+            });
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+
+{% extends "base.html" %}
+
+
+{% block content %}
+<h2>✅ Conciliar: {{ conciliacion.nombre_banco }}</h2>
+<p><strong>Periodo:</strong> {{ conciliacion.fecha_inicio }} → {{ conciliacion.fecha_fin }}</p>
+
+<div style="max-width: 600px; margin-top: 20px;">
+  <form id="formConciliar" method="POST">
+    <input type="hidden" name="id_conciliacion" value="{{ conciliacion.id_conciliacion }}">
+
+    <div style="margin-bottom: 15px;">
+      <label for="saldo_banco">Saldo según banco (₡):</label><br>
+      <input type="text" id="saldo_banco" value="₡{{ '%.2f'|format(conciliacion.saldo_banco) }}" disabled 
+             style="width: 100%; padding: 8px; background: #f2f2f2;">
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label for="saldo_sistema">Saldo según sistema (₡):</label><br>
+      <input type="number" step="0.01" name="saldo_sistema" id="saldo_sistema" required min="0"
+             value="{{ '%.2f'|format(conciliacion.saldo_sistema)|default('0.00', boolean=True) }}"
+             style="width: 100%; padding: 8px;">
+      <div id="error-saldo" style="color: red; font-size: 0.85em; margin-top: 4px; display: none;"></div>
+    </div>
+
+    <div style="margin-bottom: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px;">
+      <h4 style="margin-top: 0;">📊 Diferencia</h4>
+      <p id="diferencia-texto" style="font-size: 1.2em; margin: 0;">
+        ₡0.00
+      </p>
+      <p id="diferencia-estado" style="margin: 5px 0 0; font-size: 0.9em;"></p>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label for="observaciones">Observaciones (opcional):</label><br>
+      <textarea name="observaciones" id="observaciones" rows="3" 
+                style="width: 100%; padding: 8px; resize: vertical;">{{ conciliacion.observaciones or '' }}</textarea>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <button type="submit" id="btnConciliar" 
+              style="background: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+        ✅ Marcar como Conciliada
+      </button>
+      <a href="{{ url_for('conciliaciones_listar') }}" 
+         style="display: inline-block; margin-left: 10px; padding: 10px 20px; background: #7f8c8d; color: white; text-decoration: none; border-radius: 4px;">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Formatear número como CRC
+  function formatCRC(value) {
+    return new Intl.NumberFormat('es-CR', {
+      style: 'currency',
+      currency: 'CRC',
+      minimumFractionDigits: 2
+    }).format(value);
+  }
+
+  // Actualizar diferencia en tiempo real
+  function actualizarDiferencia() {
+    const saldoBanco = {{ conciliacion.saldo_banco|tojson }};
+    const saldoSistema = parseFloat(document.getElementById('saldo_sistema').value) || 0;
+    const diferencia = saldoBanco - saldoSistema;
+
+    const texto = document.getElementById('diferencia-texto');
+    const estado = document.getElementById('diferencia-estado');
+    const errorDiv = document.getElementById('error-saldo');
+    const btn = document.getElementById('btnConciliar');
+
+    texto.textContent = formatCRC(diferencia);
+
+    if (Math.abs(diferencia) < 0.01) {
+      texto.style.color = 'green';
+      estado.textContent = '✔️ Conciliación balanceada';
+      estado.style.color = 'green';
+      errorDiv.style.display = 'none';
+      btn.disabled = false;
+    } else {
+      texto.style.color = diferencia < 0 ? 'blue' : 'red';
+      estado.textContent = '⚠️ Diferencia pendiente de justificación';
+      estado.style.color = 'orange';
+      // No deshabilitamos el botón: permitimos conciliar con diferencia
+      errorDiv.style.display = 'none';
+      btn.disabled = false;
+    }
+  }
+
+  // Validar que saldo_sistema sea numérico y positivo
+  document.getElementById('saldo_sistema').addEventListener('input', function() {
+    const value = this.value;
+    if (value && (isNaN(value) || parseFloat(value) < 0)) {
+      document.getElementById('error-saldo').textContent = 'Ingrese un monto válido (≥ 0).';
+      document.getElementById('error-saldo').style.display = 'block';
+      document.getElementById('btnConciliar').disabled = true;
+    } else {
+      document.getElementById('error-saldo').style.display = 'none';
+      document.getElementById('btnConciliar').disabled = false;
+    }
+    actualizarDiferencia();
+  });
+
+  // Inicializar
+  actualizarDiferencia();
+</script>
+{% endblock %}

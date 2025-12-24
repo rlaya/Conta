@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>👁️ Detalle de Conciliación</h2>
+
+<div style="max-width: 700px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+
+  <div style="display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+    <h3 style="margin: 0;">{{ conciliacion.nombre_banco }}</h3>
+    <span style="background: {% if conciliacion.estatus == 'conciliada' %}#27ae60{% else %}#f39c12{% endif %}; 
+                color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">
+      {{ 'Conciliada' if conciliacion.estatus == 'conciliada' else 'Pendiente' }}
+    </span>
+  </div>
+
+  <div style="margin-bottom: 15px;">
+    <p><strong>Cuenta bancaria:</strong> {{ conciliacion.numero_cuenta }}</p>
+    <p><strong>Periodo:</strong> {{ conciliacion.fecha_inicio }} → {{ conciliacion.fecha_fin }}</p>
+    <p><strong>Conciliada el:</strong> 
+      {% if conciliacion.fecha_conciliacion %}
+        {{ conciliacion.fecha_conciliacion.strftime('%d/%m/%Y %H:%M') }}
+        {% if conciliacion.usuario_concilia %} por {{ conciliacion.usuario_concilia }}{% endif %}
+      {% else %}
+        —
+      {% endif %}
+    </p>
+  </div>
+
+  <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 6px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+      <div>
+        <p style="margin: 0; font-weight: bold;">Saldo según banco</p>
+        <p style="margin: 0; font-size: 1.3em; color: #2c3e50;">₡{{ "%.2f"|format(conciliacion.saldo_banco) }}</p>
+      </div>
+      <div>
+        <p style="margin: 0; font-weight: bold;">Saldo según sistema</p>
+        <p style="margin: 0; font-size: 1.3em; color: #2c3e50;">₡{{ "%.2f"|format(conciliacion.saldo_sistema) }}</p>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 15px;">
+      <p style="margin: 0; font-weight: bold;">Diferencia</p>
+      <p style="margin: 0; font-size: 1.4em; 
+                color: {% if conciliacion.diferencia == 0 %}green{% elif conciliacion.diferencia > 0 %}red{% else %}blue{% endif %};">
+        ₡{{ "%.2f"|format(conciliacion.diferencia) }}
+      </p>
+    </div>
+  </div>
+
+  {% if conciliacion.observaciones %}
+  <div style="margin-top: 15px;">
+    <p><strong>Observaciones:</strong></p>
+    <p style="background: #f1f1f1; padding: 10px; border-radius: 4px;">{{ conciliacion.observaciones }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Dentro del bloque <div> principal, antes del botón de volver -->
+  <div style="margin-top: 20px; display: flex; gap: 10px;">
+    <a href="{{ url_for('pdf_conciliacion', id_conc=conciliacion.id_conciliacion) }}" 
+       style="background: #e74c3c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;">
+      📄 Descargar PDF
+    </a>
+    <a href="{{ url_for('conciliaciones_listar') }}" 
+       style="background: #7f8c8d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+      ← Volver al listado
+    </a>
+  </div>
+  
+</div>
+{% endblock %}

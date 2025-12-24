@@ -1,0 +1,249 @@
+<!-- templates/comprobantes/comprobantes.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Comprobantes Contables</h2>
+    
+    <!-- Formulario de filtros -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('comprobantes.comprobantes') }}" class="row g-3">
+                <div class="col-md-2">
+                    <label for="tipo" class="form-label">Tipo</label>
+                    <input type="text" class="form-control" id="tipo" name="tipo" 
+                           value="{{ filtros.tipo or '' }}" placeholder="Ej: FACTURA">
+                </div>
+                <div class="col-md-2">
+                    <label for="folio" class="form-label">Folio</label>
+                    <input type="text" class="form-control" id="folio" name="folio" 
+                           value="{{ filtros.folio or '' }}" placeholder="Número de folio">
+                </div>
+                <div class="col-md-2">
+                    <label for="estado" class="form-label">Estado</label>
+                    <select class="form-select" id="estado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="Pendiente" {% if filtros.estado == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="Registrado" {% if filtros.estado == 'Registrado' %}selected{% endif %}>Registrado</option>
+                        <option value="Anulado" {% if filtros.estado == 'Anulado' %}selected{% endif %}>Anulado</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="fecha_desde" class="form-label">Desde</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" 
+                           value="{{ filtros.fecha_desde or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="fecha_hasta" class="form-label">Hasta</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" 
+                           value="{{ filtros.fecha_hasta or '' }}">
+                </div>
+                <div class="col-md-12 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                    <a href="{{ url_for('comprobantes.comprobantes') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Información de resultados -->
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        Mostrando {{ comprobantes|length }} de {{ total }} comprobantes
+        {% if total_pages > 1 %}
+        | Página {{ page }} de {{ total_pages }}
+        {% endif %}
+    </div>
+    
+    <!-- Tabla de comprobantes -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Lista de Comprobantes</h5>
+            <a href="{{ url_for('comprobantes.nuevo_comprobante') }}" class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle"></i> Nuevo Comprobante
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Folio</th>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comprobante in comprobantes %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ comprobante.tipo }}</span></td>
+                            <td><strong>{{ comprobante.folio }}</strong></td>
+                            <td>{{ comprobante.fecha }}</td>
+                            <td>
+                                <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ comprobante.concepto }}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <span class="badge bg-success fs-6">
+                                    ${{ "%0.2f"|format(comprobante.total) }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if comprobante.estado == 'Pendiente' %}
+                                <span class="badge bg-warning">{{ comprobante.estado }}</span>
+                                {% elif comprobante.estado == 'Registrado' %}
+                                <span class="badge bg-success">{{ comprobante.estado }}</span>
+                                {% elif comprobante.estado == 'Anulado' %}
+                                <span class="badge bg-danger">{{ comprobante.estado }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ comprobante.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ comprobante.creado_en }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('comprobantes.ver_comprobante', tipo=comprobante.tipo, folio=comprobante.folio) }}" 
+                                       class="btn btn-info" title="Ver">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('comprobantes.editar_comprobante', tipo=comprobante.tipo, folio=comprobante.folio) }}" 
+                                       class="btn btn-warning" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{{ url_for('comprobantes.asientos', tipo=comprobante.tipo, folio=comprobante.folio) }}" 
+                                       class="btn btn-primary" title="Asientos">
+                                        <i class="bi bi-journal-text"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                    <p class="mt-2">No se encontraron comprobantes</p>
+                                    <a href="{{ url_for('comprobantes.nuevo_comprobante') }}" class="btn btn-outline-primary mt-2">
+                                        <i class="bi bi-plus-circle"></i> Crear primer comprobante
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Paginación -->
+    {% if total_pages > 1 %}
+    <nav aria-label="Paginación" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <!-- Botón Anterior -->
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ base_url }}{% if '?' in base_url %}&{% else %}?{% endif %}page={{ page - 1 }}">
+                    <i class="bi bi-chevron-left"></i> Anterior
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="bi bi-chevron-left"></i> Anterior</span>
+            </li>
+            {% endif %}
+            
+            <!-- Números de página -->
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, page + 2]|min %}
+            
+            {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ base_url }}{% if '?' in base_url %}&{% else %}?{% endif %}page=1">1</a>
+            </li>
+            {% if start_page > 2 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+            {% endif %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{{ base_url }}{% if '?' in base_url %}&{% else %}?{% endif %}page={{ p }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+            <li class="page-item disabled">
+                <span class="page-link">...</span>
+            </li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="{{ base_url }}{% if '?' in base_url %}&{% else %}?{% endif %}page={{ total_pages }}">{{ total_pages }}</a>
+            </li>
+            {% endif %}
+            
+            <!-- Botón Siguiente -->
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ base_url }}{% if '?' in base_url %}&{% else %}?{% endif %}page={{ page + 1 }}">
+                    Siguiente <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Siguiente <i class="bi bi-chevron-right"></i></span>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <!-- Información de paginación -->
+        <!-- Línea 62 aproximadamente -->
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Mostrando {{ comprobantes|length }} de {{ total }} comprobantes
+            {% if total_pages > 1 %}
+            | Página {{ page }} de {{ total_pages }}
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Estilos adicionales -->
+<style>
+    .table th {
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+    .badge {
+        font-size: 0.85em;
+    }
+    .pagination {
+        font-size: 0.9rem;
+    }
+    .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .btn-group .btn {
+        border-radius: 4px;
+        margin: 0 2px;
+    }
+</style>
+{% endblock %}

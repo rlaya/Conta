@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    
+    <title>{% block title %}Sistema Contable{% endblock %}</title>
+    
+    <meta name="description" content="Sistema de gestión contable y administrativa.">
+    <meta name="keywords" content="contabilidad, finanzas, administración, clientes, proveedores">
+
+    <link href="{{ url_for('static', filename='img/favicon-32x32.png') }}" rel="icon">
+    <link href="{{ url_for('static', filename='img/apple-icon-180x180.png') }}" rel="apple-touch-icon">
+
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMD/cdk+Qtd89WfC7HloH8lS7h6k8T7pX/x8U6x1z5z0/XoT7s2O9+zO/T4w5A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" integrity="sha512-1cK78a1o+ht2JcaW6g8OXYwqpev9+6GqOkz9xmBN9iUUhIndKtxwILGWYOSibOKjLsEdjyjZvYDq/cZwNeak0w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.1/css/glightbox.min.css" integrity="sha512-T+KoG3fbDoSnlgEXFQqwcTC9AdkFIxhBlmoaFqYaIjq2ShhNwNao9AKaLUPMfwiBPL0ScxAtc+UYbHAgvd+sjQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.css" integrity="sha512-rd0qOHVMOcez6pLWPVFIv7EfSdGKLt+eafXh4RO/12Fgr41hDQfGvoi1Vy55QIVcQEujUE1LQrATCLl2Fs+ag==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+
+</head>
+
+<body class="index-page">
+
+    <header id="header" class="header d-flex align-items-center sticky-top">
+        <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
+            <a href="{{ url_for('menu') }}" class="logo d-flex align-items-center">
+                <img src="{{ url_for('static', filename='img/RL.png') }}" alt="Logo">
+                <h1 class="sitename">Sistema Contable</h1>
+            </a>
+
+            <div class="d-none d-md-flex align-items-center me-4 text-secondary small fw-medium">
+                <i class="bi bi-calendar-check me-2"></i>
+                <span id="current-date-time"></span>
+            </div>
+
+            <nav id="navmenu" class="navmenu">
+                <ul>
+                    {% block nav_items %}
+                        {% endblock %}
+                </ul>
+                <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+            </nav>
+            
+        </div>
+        
+        <div class="header-status me-3">
+             {% if session.user_id %}
+                <div class="d-flex align-items-center">
+                    <span class="d-none d-lg-inline me-2 text-dark small">Bienvenido, 
+                        <strong class="text-primary">{{ session.nombre }}</strong>
+                    </span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> Salir
+                    </a>
+                </div>
+            {% endif %}
+
+            <div class="mt-2 position-absolute" style="z-index: 1050; right: 0; top: 100%;">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+
+    </header>
+
+    <main class="main">
+        <div class="container py-4">
+            {% block content %}
+                {% endblock %}
+        </div>
+    </main>
+
+    <footer id="footer" class="footer light-background">
+        <div class="container">
+            <div class="copyright text-center mt-4">
+                <p>
+                    © <span>Copyright</span> 
+                    <strong class="px-1 sitename">Rafael Laya</strong> 
+                    <span>Todos los derechos reservados.</span>
+                </p>
+            </div>
+            
+            <div class="social-links d-flex justify-content-center mt-3 mb-4">
+                <a href="#" class="twitter"><i class="bi bi-twitter-x"></i></a>
+                <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
+                <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
+                <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+    <div id="preloader"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.1/js/glightbox.min.js" integrity="sha512-XL54SjceXZFzblziNnaFFaXggzqCuZrFS4loWPpvPJ6Kg0kc2HyL89+cPeH0GMq0sKL2SegzUmA8Lx9a0st2ow==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js" integrity="sha512-Ysw1DcK1P+uYLqprEAzNQJP+J4hTx4t/3X2nbVwszao8wD+9afLjBQYjz7Uk4ADP+Er++mJoScI42ueGtQOzEA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const nombres_dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const nombres_meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+            const dia_semana = nombres_dias[now.getDay()];
+            const dia_mes = now.getDate();
+            const mes = nombres_meses[now.getMonth()];
+            const anio = now.getFullYear();
+
+            // Formato de hora HH:MM:SS
+            const hora = now.getHours().toString().padStart(2, '0');
+            const minutos = now.getMinutes().toString().padStart(2, '0');
+            // const segundos = now.getSeconds().toString().padStart(2, '0');
+            
+            const fecha_texto = `${dia_semana}, ${dia_mes} de ${mes} de ${anio} | ${hora}:${minutos}`;
+            
+            const element = document.getElementById('current-date-time');
+            if(element) {
+                element.textContent = fecha_texto;
+            }
+        }
+        
+        // Ejecutar inmediatamente y luego actualizar cada minuto (o segundo si añades 'segundos')
+        updateDateTime(); 
+        setInterval(updateDateTime, 60000); // Actualiza cada 60 segundos (1 minuto)
+
+    </script>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+
+</body>
+
+</html>
